@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -20,6 +20,7 @@ interface AuthContextType {
   loading: boolean;
   updateUser: (updatedUser: User) => void;
   refreshUser: () => Promise<void>;
+  extendSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -107,8 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const extendSession = useCallback(() => {
+    // Reset timeout al extender sesión
+    const event = new CustomEvent('sessionExtended');
+    window.dispatchEvent(event);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading, updateUser, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading, updateUser, refreshUser, extendSession }}>
       {children}
     </AuthContext.Provider>
   );

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const token = jwt.sign(
       { userId: user.id, username: user.username },
       process.env.NEXTAUTH_SECRET || 'fallback-secret',
-      { expiresIn: '24h' }
+      { expiresIn: '2h' }
     )
 
     return NextResponse.json({
