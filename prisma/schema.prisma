@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String   @id @default(cuid())
+  username              String   @unique
+  password              String
+  nombres               String   @default("")
+  apellidos             String   @default("")
+  cedula                String?  @unique
+  credencial            String   @default("")
+  telefono              String   @default("")
+  grado                 String   @default("FUNCIONARIO/A")
+  role                  String   @default("user") // "user" o "admin"
+  mustChangePassword    Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  visits Visit[]
+
+  @@map("users")
+}
+
+model Visit {
+  id                  String    @id @default(cuid())
+  nombres             String
+  apellidos           String
+  cedula              String
+  fechaNacimiento     DateTime
+  edad                Int
+  telefono            String
+  entryDate           String
+  entryTime           String
+  motivoCategoria     String
+  motivoDescripcion   String
+  photo               String?
+  exitDate            String?
+  exitTime            String?
+  registeredBy        String
+  exitRegisteredBy    String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("visits")
+}
