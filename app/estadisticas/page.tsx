@@ -57,6 +57,7 @@ export default function Estadisticas() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [histogramRange, setHistogramRange] = useState<'7days' | '15days' | '30days' | 'monthly'>('7days');
   const [motivoFilter, setMotivoFilter] = useState<string>('todos');
+  const [motivoFilterCalendar, setMotivoFilterCalendar] = useState<string>('todos');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -334,9 +335,14 @@ export default function Estadisticas() {
   const downloadPDF = () => {
     if (!selectedDate) return;
     
-    const dayVisits = visits.filter(visit => visit.entryDate === selectedDate);
+    // Aplicar filtro por motivo
+    const filteredVisits = motivoFilterCalendar === 'todos' 
+      ? visits 
+      : visits.filter(v => v.motivoCategoria === motivoFilterCalendar);
+    
+    const dayVisits = filteredVisits.filter(visit => visit.entryDate === selectedDate);
     if (dayVisits.length === 0) {
-      alert('No hay visitas registradas para esta fecha');
+      alert('No hay visitas registradas para esta fecha con el filtro seleccionado');
       return;
     }
 
@@ -344,44 +350,44 @@ export default function Estadisticas() {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = `
       <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; color: black;">
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 20px; margin: -20px -20px 20px -20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 28px; font-weight: 700;">aXeso</h1>
-          <p style="margin: 5px 0 0 0; font-size: 20px; opacity: 0.95;">POLICÍA NACIONAL - DCHPEF</p>
+        <div style="text-align: center; border-bottom: 1px solid black; padding-bottom: 15px; margin-bottom: 20px;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: black;">aXeso</h1>
+          <p style="margin: 5px 0 0 0; font-size: 18px; color: black;">POLICÍA NACIONAL - DCHPEF</p>
         </div>
         
-        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 10px 0; text-align: left; color: black;">
+        <div style="padding: 15px; border: 1px solid black; margin: 10px 0; text-align: left;">
           <h1 style="color: black; font-size: 24px; margin: 0 0 10px 0; text-align: center;">REPORTE DE VISITAS</h1>
           <p style="margin: 0 0 5px 0; color: black;"><strong>Fecha:</strong> ${selectedDate}</p>
           <p style="margin: 0 0 5px 0; color: black;"><strong>Total de Visitas:</strong> ${dayVisits.length}</p>
           <p style="margin: 0; color: black;"><strong>Generado:</strong> ${new Date().toLocaleString('es-PY')}</p>
         </div>
         
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid black;">
           <thead>
-            <tr style="background: #2563eb; color: white;">
-              <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600;">ID</th>
-              <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600;">Nombres</th>
-              <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600;">Apellidos</th>
-              <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600;">Número de Documento</th>
-              <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600;">Hora Entrada</th>
-              <th style="padding: 12px 8px; text-align: left; font-size: 12px; font-weight: 600;">Motivo</th>
+            <tr>
+              <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: bold; border-bottom: 2px solid black;">ID</th>
+              <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: bold; border-bottom: 2px solid black;">Nombres</th>
+              <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: bold; border-bottom: 2px solid black;">Apellidos</th>
+              <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: bold; border-bottom: 2px solid black;">Número de Documento</th>
+              <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: bold; border-bottom: 2px solid black;">Hora Entrada</th>
+              <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: bold; border-bottom: 2px solid black;">Motivo</th>
             </tr>
           </thead>
           <tbody>
             ${dayVisits.sort((a, b) => a.entryTime.localeCompare(b.entryTime)).map((visit, index) => `
-              <tr style="${index % 2 === 0 ? 'background: #f8fafc;' : ''}">
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: black;">${visit.id}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: black;">${visit.nombres}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: black;">${visit.apellidos}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: black;">${visit.cedula}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: black;">${visit.entryTime}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: black;">${visit.motivoCategoria}</td>
+              <tr>
+                <td style="padding: 8px 6px; border-bottom: 1px solid black; font-size: 10px; color: black;">${visit.id}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid black; font-size: 10px; color: black;">${visit.nombres}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid black; font-size: 10px; color: black;">${visit.apellidos}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid black; font-size: 10px; color: black;">${visit.cedula}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid black; font-size: 10px; color: black;">${visit.entryTime}</td>
+                <td style="padding: 8px 6px; border-bottom: 1px solid black; font-size: 10px; color: black;">${visit.motivoCategoria}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
         
-        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: black; border-top: 2px solid #e2e8f0; padding-top: 15px;">
+        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: black; border-top: 1px solid black; padding-top: 15px;">
           <p style="margin: 0; color: black; font-size: 12px;">aXeso | Policía Nacional (DCHPEF)</p>
           <p style="margin: 5px 0 0 0; color: black;">Este es un documento generado automáticamente por el sistema.</p>
         </div>
@@ -435,9 +441,14 @@ export default function Estadisticas() {
   const printThermalReport = () => {
     if (!selectedDate) return;
     
-    const dayVisits = visits.filter(visit => visit.entryDate === selectedDate);
+    // Aplicar filtro por motivo
+    const filteredVisits = motivoFilterCalendar === 'todos' 
+      ? visits 
+      : visits.filter(v => v.motivoCategoria === motivoFilterCalendar);
+    
+    const dayVisits = filteredVisits.filter(visit => visit.entryDate === selectedDate);
     if (dayVisits.length === 0) {
-      alert('No hay visitas registradas para esta fecha');
+      alert('No hay visitas registradas para esta fecha con el filtro seleccionado');
       return;
     }
 
@@ -527,6 +538,7 @@ export default function Estadisticas() {
             <div class="info-section">
               <div class="info-label">REPORTE DE VISITAS</div>
               <div class="info-value">${selectedDate}</div>
+              ${motivoFilterCalendar !== 'todos' ? `<div class="info-value">Motivo: ${motivoFilterCalendar}</div>` : ''}
             </div>
             
             <div class="visit-row">
@@ -848,7 +860,23 @@ export default function Estadisticas() {
 
         {/* Calendario de Visitas por Día */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold text-slate-800 mb-4">Visitas por Mes</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-slate-800">Visitas por Mes</h2>
+            {/* Filtro por motivo para el calendario */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600">Motivo:</label>
+              <select
+                value={motivoFilterCalendar}
+                onChange={(e) => setMotivoFilterCalendar(e.target.value)}
+                className="px-3 py-2 text-sm text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="todos">Todos</option>
+                {motivosUnicos.map(motivo => (
+                  <option key={motivo} value={motivo}>{motivo}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           
           {/* Controles del calendario */}
           <div className="flex items-center justify-between mb-6">
@@ -902,7 +930,11 @@ export default function Estadisticas() {
               // Días del mes
               for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
-                const visitsCount = visits.filter(v => v.entryDate === dateStr).length;
+                // Aplicar filtro por motivo
+                const filteredVisits = motivoFilterCalendar === 'todos' 
+                  ? visits 
+                  : visits.filter(v => v.motivoCategoria === motivoFilterCalendar);
+                const visitsCount = filteredVisits.filter(v => v.entryDate === dateStr).length;
                 const hasVisits = visitsCount > 0;
                 const isSelected = selectedDate === dateStr;
                 
@@ -938,9 +970,19 @@ export default function Estadisticas() {
                 <div>
                   <h4 className="font-semibold text-blue-900 mb-1">
                     Visitas del {selectedDate}
+                    {motivoFilterCalendar !== 'todos' && (
+                      <span className="text-sm font-normal text-blue-600 ml-2">
+                        (Filtro: {motivoFilterCalendar})
+                      </span>
+                    )}
                   </h4>
                   <p className="text-2xl font-bold text-blue-700">
-                    {visits.filter(v => v.entryDate === selectedDate).length} visitas
+                    {(() => {
+                      const filteredVisits = motivoFilterCalendar === 'todos' 
+                        ? visits 
+                        : visits.filter(v => v.motivoCategoria === motivoFilterCalendar);
+                      return filteredVisits.filter(v => v.entryDate === selectedDate).length;
+                    })()} visitas
                   </p>
                 </div>
                 <div className="flex gap-3">

@@ -55,6 +55,7 @@ export default function RegistroEntrada() {
     'Citación',
     'Denuncia',
     'Visita a Director',
+    'Prensa',
     'Otro'
   ];
 

@@ -42,29 +42,10 @@ export default function SessionManager() {
     onWarning: handleWarning
   });
 
-  // Limpiar sesión al cerrar navegador/pestaña
-  useEffect(() => {
-    if (!user) return;
-
-    const handleBeforeUnload = () => {
-      // Limpiar localStorage al cerrar
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-    };
-
-    const handleUnload = () => {
-      // Logout inmediato al cerrar
-      logout();
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('unload', handleUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('unload', handleUnload);
-    };
-  }, [user, logout]);
+  // Nota: Se removió la limpieza automática de sesión al cerrar/recargar
+  // para evitar que el usuario se desloguee al recargar la página.
+  // La sesión se mantendrá hasta que expire el token JWT (2 horas)
+  // o hasta que el usuario haga logout manual.
 
   // Escuchar eventos de extensión de sesión
   useEffect(() => {
