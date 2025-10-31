@@ -39,7 +39,7 @@ git pull origin main
 
 # 4. Instalar nuevas dependencias
 print_status "Instalando dependencias..."
-npm ci --production
+npm ci
 
 # 5. Ejecutar migraciones si las hay
 print_status "Ejecutando migraciones de base de datos..."

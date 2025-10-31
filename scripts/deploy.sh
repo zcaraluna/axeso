@@ -45,7 +45,7 @@ psql --version
 
 # 3. Instalar dependencias del proyecto
 print_status "Instalando dependencias del proyecto..."
-npm ci --production
+npm ci
 
 # 4. Configurar base de datos PostgreSQL
 print_status "Configurando base de datos..."
