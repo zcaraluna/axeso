@@ -19,7 +19,6 @@ interface Visit {
   entryTime: string;
   motivoCategoria: string;
   motivoDescripcion: string;
-  photo?: string;
   exitDate?: string;
   exitTime?: string;
   registeredBy: string;
@@ -36,7 +35,6 @@ export default function Historial() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [showTicket, setShowTicket] = useState(false);
   const [ticketData, setTicketData] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
@@ -292,7 +290,6 @@ export default function Historial() {
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-100 border-b-2 border-slate-300">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Foto</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">ID</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Nombre</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Número de Documento</th>
@@ -306,28 +303,13 @@ export default function Historial() {
               <tbody>
                 {currentVisits.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                       No se encontraron visitas
                     </td>
                   </tr>
                 ) : (
                   currentVisits.map((visit) => (
                     <tr key={visit.id} className="border-b border-slate-200 hover:bg-slate-50">
-                      <td className="px-4 py-3">
-                        {visit.photo ? (
-                          <div className="w-12 h-12 rounded overflow-hidden border border-slate-300">
-                            <img
-                              src={visit.photo}
-                              alt="Foto"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded bg-slate-200 flex items-center justify-center text-xs text-slate-500">
-                            Sin foto
-                          </div>
-                        )}
-                      </td>
                       <td className="px-4 py-3 text-sm font-medium text-slate-900">{visit.id}</td>
                       <td className="px-4 py-3 text-sm text-slate-900">
                         {visit.nombres} {visit.apellidos}
@@ -445,26 +427,6 @@ export default function Historial() {
 
                   <div className="flex gap-6">
                     {/* Foto a la izquierda */}
-                    {selectedVisit.photo && (
-                      <div className="flex-shrink-0">
-                        <div 
-                          className="w-48 h-48 rounded-lg overflow-hidden border-4 border-slate-200 shadow-lg cursor-pointer hover:border-blue-500 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFullscreenImage(selectedVisit.photo || null);
-                          }}
-                          title="Click para ver en tamaño completo"
-                        >
-                          <img
-                            src={selectedVisit.photo}
-                            alt="Foto del visitante"
-                            className="w-full h-full object-cover hover:scale-105 transition-transform"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Datos a la derecha */}
                     <div className="flex-1">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -534,30 +496,6 @@ export default function Historial() {
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Modal de imagen en pantalla completa */}
-          {fullscreenImage && (
-            <div 
-              className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60]"
-              onClick={() => setFullscreenImage(null)}
-            >
-              <div className="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
-                <button
-                  onClick={() => setFullscreenImage(null)}
-                  className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl font-bold bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center z-10"
-                  title="Cerrar"
-                >
-                  ×
-                </button>
-                <img
-                  src={fullscreenImage}
-                  alt="Foto en tamaño completo"
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                />
               </div>
             </div>
           )}

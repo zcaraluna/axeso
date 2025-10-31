@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +18,6 @@ interface Visit {
   entryTime: string;
   motivoCategoria: string;
   motivoDescripcion: string;
-  photo?: string;
   exitDate?: string;
   exitTime?: string;
   registeredBy: string;
@@ -36,16 +35,8 @@ export default function RegistroEntrada() {
     motivoDescripcion: ''
   });
   const [edad, setEdad] = useState<number | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [cameraError, setCameraError] = useState('');
-  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
-  const [selectedCamera, setSelectedCamera] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -66,128 +57,7 @@ export default function RegistroEntrada() {
       router.push('/');
       return;
     }
-
-    // Detectar cámaras disponibles pero NO iniciar automáticamente
-    detectCamerasOnly();
-
-    // Limpiar al desmontar
-    return () => {
-      stopCamera();
-    };
   }, [user, authLoading, router]);
-
-  const detectCamerasOnly = async () => {
-    try {
-      // Primero solicitar permisos temporalmente
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      
-      // Obtener lista de dispositivos
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      
-      // Cerrar el stream temporal
-      tempStream.getTracks().forEach(track => track.stop());
-      
-      setCameras(videoDevices);
-      
-      // Buscar la cámara Logitech Brio 100 como predeterminada
-      const brioCamera = videoDevices.find(device => 
-        device.label.toLowerCase().includes('brio') || 
-        device.label.toLowerCase().includes('logitech brio')
-      );
-      
-      if (brioCamera) {
-        // Si se encuentra la Brio, establecerla como seleccionada (pero no iniciarla)
-        setSelectedCamera(brioCamera.deviceId);
-      } else if (videoDevices.length > 0) {
-        // Si no se encuentra, usar la primera cámara disponible
-        setSelectedCamera(videoDevices[0].deviceId);
-      }
-    } catch (error) {
-      console.error('Error al detectar cámaras:', error);
-      setCameraError('No se pudo acceder a las cámaras. Por favor, verifique los permisos.');
-    }
-  };
-
-  const startCamera = async (deviceId?: string) => {
-    try {
-      setCameraError('');
-      console.log('startCamera llamado con deviceId:', deviceId);
-      
-      // Detener cámara anterior si existe
-      stopCamera();
-      
-      const constraints: MediaStreamConstraints = {
-        video: deviceId 
-          ? { 
-              deviceId: { exact: deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          : { 
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              facingMode: 'user'
-            }
-      };
-      
-      console.log('Solicitando permisos con constraints:', constraints);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Stream obtenido:', stream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setCameraActive(true);
-        console.log('Cámara activada exitosamente');
-      } else {
-        console.error('videoRef.current es null');
-        setCameraError('Error: Elemento de video no disponible');
-      }
-    } catch (error) {
-      console.error('Error al acceder a la cámara:', error);
-      setCameraError(`No se pudo acceder a la cámara: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setCameraActive(false);
-  };
-
-  const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      const context = canvas.getContext('2d');
-      if (context) {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const photoData = canvas.toDataURL('image/jpeg', 0.8);
-        setPhoto(photoData);
-        stopCamera();
-      }
-    }
-  };
-
-  const retakePhoto = () => {
-    setPhoto(null);
-    startCamera(selectedCamera);
-  };
-
-  const handleCameraChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newCameraId = e.target.value;
-    setSelectedCamera(newCameraId);
-    if (!photo) {
-      startCamera(newCameraId);
-    }
-  };
 
   const calculateAge = (birthDate: string): number => {
     const today = new Date();
@@ -234,7 +104,6 @@ export default function RegistroEntrada() {
         entryTime: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false }),
         motivoCategoria: formData.motivoCategoria,
         motivoDescripcion: formData.motivoDescripcion,
-        photo: photo || undefined,
         userId: user.id
       };
 
@@ -414,117 +283,6 @@ export default function RegistroEntrada() {
               </div>
             </div>
 
-            {/* Sección de Cámara */}
-            <div className="border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
-              <h2 className="text-xl font-bold text-slate-800 mb-4">Fotografía del Visitante (Opcional)</h2>
-              
-              {cameraError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
-                  {cameraError}
-                </div>
-              )}
-
-              {/* Selector de cámara */}
-              {cameras.length > 1 && !photo && cameraActive && (
-                <div className="mb-4">
-                  <label htmlFor="cameraSelect" className="block text-sm font-medium text-slate-700 mb-2">
-                    Seleccionar Cámara
-                  </label>
-                  <select
-                    id="cameraSelect"
-                    value={selectedCamera}
-                    onChange={handleCameraChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-slate-900"
-                  >
-                    {cameras.map((camera, index) => (
-                      <option key={camera.deviceId} value={camera.deviceId}>
-                        {camera.label || `Cámara ${index + 1}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="flex flex-col items-center">
-                {!photo ? (
-                  <div className="w-full max-w-md">
-                    <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                        style={{ display: cameraActive ? 'block' : 'none' }}
-                      />
-                      {!cameraActive && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                          <p className="text-white text-center px-4">Presiona el botón para activar la cámara</p>
-                        </div>
-                      )}
-                    </div>
-                    {cameraActive ? (
-                      <div className="flex gap-3 mt-4">
-                        <button
-                          type="button"
-                          onClick={takePhoto}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-                        >
-                          Capturar Foto
-                        </button>
-                        <button
-                          type="button"
-                          onClick={stopCamera}
-                          className="flex-1 bg-slate-500 hover:bg-slate-600 text-white font-semibold py-3 rounded-lg transition duration-200"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          console.log('Iniciando cámara con deviceId:', selectedCamera);
-                          startCamera(selectedCamera || undefined);
-                        }}
-                        className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-                      >
-                        Tomar Fotografía
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full max-w-md">
-                    <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                      <img
-                        src={photo}
-                        alt="Foto del visitante"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex gap-3 mt-4">
-                      <button
-                        type="button"
-                        onClick={retakePhoto}
-                        className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-                      >
-                        Tomar Otra Foto
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPhoto(null)}
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-                      >
-                        Eliminar Foto
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Canvas oculto para captura */}
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -554,4 +312,3 @@ export default function RegistroEntrada() {
     </div>
   );
 }
-

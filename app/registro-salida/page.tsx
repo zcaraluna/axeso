@@ -18,7 +18,6 @@ interface Visit {
   entryTime: string;
   motivoCategoria: string;
   motivoDescripcion: string;
-  photo?: string;
   exitDate?: string;
   exitTime?: string;
   registeredBy: string;
@@ -29,7 +28,6 @@ export default function RegistroSalida() {
   const [searchTerm, setSearchTerm] = useState('');
   const [visitsInside, setVisitsInside] = useState<Visit[]>([]);
   const [filteredVisits, setFilteredVisits] = useState<Visit[]>([]);
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -241,19 +239,6 @@ export default function RegistroSalida() {
                         <h3 className="font-bold text-slate-800 text-lg">{visit.nombres} {visit.apellidos}</h3>
                         <p className="text-slate-600 text-sm">ID: {visit.id}</p>
                       </div>
-                      {visit.photo && (
-                        <div 
-                          className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow-md cursor-pointer hover:border-blue-500 transition-colors"
-                          onClick={() => setFullscreenImage(visit.photo || null)}
-                          title="Click para ver foto completa"
-                        >
-                          <img
-                            src={visit.photo}
-                            alt="Foto del visitante"
-                            className="w-full h-full object-cover hover:scale-105 transition-transform"
-                          />
-                        </div>
-                      )}
                     </div>
 
                     <div className="space-y-2 mb-4">
@@ -292,29 +277,6 @@ export default function RegistroSalida() {
         </div>
       </div>
 
-      {/* Modal de imagen en pantalla completa */}
-      {fullscreenImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60]"
-          onClick={() => setFullscreenImage(null)}
-        >
-          <div className="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
-            <button
-              onClick={() => setFullscreenImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl font-bold bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center z-10"
-              title="Cerrar"
-            >
-              ×
-            </button>
-            <img
-              src={fullscreenImage}
-              alt="Foto en tamaño completo"
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

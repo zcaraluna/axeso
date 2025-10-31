@@ -19,7 +19,6 @@ interface Visit {
   entryTime: string;
   motivoCategoria: string;
   motivoDescripcion: string;
-  photo?: string;
   registeredBy: string;
   exitRegisteredBy?: string;
 }
@@ -29,7 +28,6 @@ function ResumenContent() {
   const searchParams = useSearchParams();
   const [visit, setVisit] = useState<Visit | null>(null);
   const [showTicket, setShowTicket] = useState(false);
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user } = useAuth();
@@ -182,20 +180,6 @@ function ResumenContent() {
               </div>
             </div>
 
-            {visit.photo && (
-              <div className="bg-slate-50 rounded-lg p-4 md:col-span-2">
-                <h3 className="text-sm font-semibold text-slate-600 mb-2">Fotografía</h3>
-                <div className="flex justify-center">
-                  <img
-                    src={visit.photo}
-                    alt="Foto del visitante"
-                    className="max-w-sm rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setFullscreenImage(visit.photo || null)}
-                    title="Click para ver en tamaño completo"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="flex gap-4">
@@ -241,29 +225,6 @@ function ResumenContent() {
         />
       )}
 
-      {/* Modal de imagen en pantalla completa */}
-      {fullscreenImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60]"
-          onClick={() => setFullscreenImage(null)}
-        >
-          <div className="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
-            <button
-              onClick={() => setFullscreenImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl font-bold bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center z-10"
-              title="Cerrar"
-            >
-              ×
-            </button>
-            <img
-              src={fullscreenImage}
-              alt="Foto en tamaño completo"
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
