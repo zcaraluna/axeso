@@ -13,8 +13,7 @@ interface Visit {
   nombres: string;
   apellidos: string;
   cedula: string;
-  fechaNacimiento: string;
-  edad: number;
+  tipoDocumento: string;
   telefono: string;
   entryDate: string;
   entryTime: string;

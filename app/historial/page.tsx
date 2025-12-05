@@ -12,8 +12,7 @@ interface Visit {
   nombres: string;
   apellidos: string;
   cedula: string;
-  fechaNacimiento: string;
-  edad: number;
+  tipoDocumento: string;
   telefono: string;
   entryDate: string;
   entryTime: string;
@@ -438,12 +437,12 @@ export default function Historial() {
                       <p className="font-semibold text-slate-900">{selectedVisit.nombres} {selectedVisit.apellidos}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-slate-600">Número de Documento</p>
-                      <p className="font-semibold text-slate-900">{selectedVisit.cedula}</p>
+                      <p className="text-sm text-slate-600">Tipo de Documento</p>
+                      <p className="font-semibold text-slate-900">{selectedVisit.tipoDocumento}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-slate-600">Edad</p>
-                      <p className="font-semibold text-slate-900">{selectedVisit.edad} años</p>
+                      <p className="text-sm text-slate-600">Número de Documento</p>
+                      <p className="font-semibold text-slate-900">{selectedVisit.cedula}</p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-600">Teléfono</p>

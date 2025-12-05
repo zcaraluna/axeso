@@ -9,6 +9,7 @@ async function main() {
   // Crear usuarios por defecto
   const hashedAdminPassword = await bcrypt.hash('admin123', 12)
   const hashedOficialPassword = await bcrypt.hash('oficial123', 12)
+  const hashedGarvPassword = await bcrypt.hash('admin123', 12)
 
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
@@ -44,7 +45,28 @@ async function main() {
     },
   })
 
-  console.log('Users created:', { admin: admin.username, oficial: oficial.username })
+  const garv = await prisma.user.upsert({
+    where: { username: 'garv' },
+    update: {
+      password: hashedGarvPassword,
+      role: 'admin',
+      mustChangePassword: false,
+    },
+    create: {
+      username: 'garv',
+      password: hashedGarvPassword,
+      nombres: 'GARV',
+      apellidos: 'ADMINISTRADOR',
+      cedula: '9999999',
+      credencial: 'GARV-001',
+      telefono: '0980000000',
+      grado: 'ADMINISTRADOR',
+      role: 'admin',
+      mustChangePassword: false,
+    },
+  })
+
+  console.log('Users created:', { admin: admin.username, oficial: oficial.username, garv: garv.username })
 }
 
 main()

@@ -12,8 +12,7 @@ interface Visit {
   nombres: string;
   apellidos: string;
   cedula: string;
-  fechaNacimiento: string;
-  edad: number;
+  tipoDocumento: string;
   telefono: string;
   entryDate: string;
   entryTime: string;
@@ -134,12 +133,12 @@ function ResumenContent() {
                   <p className="font-semibold text-slate-800">{visit.nombres} {visit.apellidos}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Número de Documento</p>
-                  <p className="font-semibold text-slate-800">{visit.cedula}</p>
+                  <p className="text-xs text-slate-500">Tipo de Documento</p>
+                  <p className="font-semibold text-slate-800">{visit.tipoDocumento}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Edad</p>
-                  <p className="font-semibold text-slate-800">{visit.edad} años</p>
+                  <p className="text-xs text-slate-500">Número de Documento</p>
+                  <p className="font-semibold text-slate-800">{visit.cedula}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Teléfono</p>

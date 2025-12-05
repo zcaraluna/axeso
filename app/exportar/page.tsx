@@ -11,8 +11,7 @@ interface Visit {
   nombres: string;
   apellidos: string;
   cedula: string;
-  fechaNacimiento: string;
-  edad: number;
+  tipoDocumento: string;
   telefono: string;
   entryDate: string;
   entryTime: string;
@@ -71,9 +70,8 @@ export default function Exportar() {
       'ID',
       'Nombres',
       'Apellidos',
+      'Tipo de Documento',
       'Número de Documento',
-      'Fecha Nacimiento',
-      'Edad',
       'Teléfono',
       'Fecha Entrada',
       'Hora Entrada',
@@ -89,9 +87,8 @@ export default function Exportar() {
       v.id,
       v.nombres,
       v.apellidos,
+      v.tipoDocumento,
       v.cedula,
-      v.fechaNacimiento,
-      v.edad.toString(),
       v.telefono,
       v.entryDate,
       v.entryTime,

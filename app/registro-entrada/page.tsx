@@ -6,35 +6,16 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
 
-interface Visit {
-  id: string;
-  nombres: string;
-  apellidos: string;
-  cedula: string;
-  fechaNacimiento: string;
-  edad: number;
-  telefono: string;
-  entryDate: string;
-  entryTime: string;
-  motivoCategoria: string;
-  motivoDescripcion: string;
-  exitDate?: string;
-  exitTime?: string;
-  registeredBy: string;
-  exitRegisteredBy?: string;
-}
-
 export default function RegistroEntrada() {
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
     cedula: '',
-    fechaNacimiento: '',
+    tipoDocumento: '',
     telefono: '',
     motivoCategoria: '',
     motivoDescripcion: ''
   });
-  const [edad, setEdad] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { user, loading: authLoading } = useAuth();
@@ -50,6 +31,13 @@ export default function RegistroEntrada() {
     'Otro'
   ];
 
+  const tiposDocumento = [
+    'Cédula de Identidad',
+    'Pasaporte',
+    'Cédula Extranjera',
+    'Otro'
+  ];
+
   useEffect(() => {
     if (authLoading) return; // Esperar a que termine la carga de autenticación
     
@@ -59,25 +47,9 @@ export default function RegistroEntrada() {
     }
   }, [user, authLoading, router]);
 
-  const calculateAge = (birthDate: string): number => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-
-    if (name === 'fechaNacimiento' && value) {
-      const calculatedAge = calculateAge(value);
-      setEdad(calculatedAge);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,8 +69,7 @@ export default function RegistroEntrada() {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
         cedula: formData.cedula,
-        fechaNacimiento: formData.fechaNacimiento,
-        edad: edad || 0,
+        tipoDocumento: formData.tipoDocumento,
         telefono: formData.telefono,
         entryDate: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         entryTime: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false }),
@@ -192,6 +163,25 @@ export default function RegistroEntrada() {
               </div>
 
               <div>
+                <label htmlFor="tipoDocumento" className="block text-sm font-medium text-slate-700 mb-2">
+                  Tipo de Documento *
+                </label>
+                <select
+                  id="tipoDocumento"
+                  name="tipoDocumento"
+                  value={formData.tipoDocumento}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-slate-900"
+                  required
+                >
+                  <option value="">Seleccione un tipo</option>
+                  {tiposDocumento.map(tipo => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label htmlFor="cedula" className="block text-sm font-medium text-slate-700 mb-2">
                   Número de Documento *
                 </label>
@@ -218,33 +208,6 @@ export default function RegistroEntrada() {
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-slate-900"
                   required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="fechaNacimiento" className="block text-sm font-medium text-slate-700 mb-2">
-                  Fecha de Nacimiento *
-                </label>
-                <input
-                  id="fechaNacimiento"
-                  name="fechaNacimiento"
-                  type="date"
-                  value={formData.fechaNacimiento}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-slate-900"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Edad
-                </label>
-                <input
-                  type="text"
-                  value={edad !== null ? `${edad} años` : ''}
-                  disabled
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-100 text-slate-900"
                 />
               </div>
 

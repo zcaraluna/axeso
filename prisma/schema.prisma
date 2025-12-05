@@ -38,8 +38,7 @@ model Visit {
   nombres             String
   apellidos           String
   cedula              String
-  fechaNacimiento     DateTime
-  edad                Int
+  tipoDocumento       String
   telefono            String
   entryDate           String
   entryTime           String
