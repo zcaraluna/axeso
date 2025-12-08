@@ -61,7 +61,8 @@ export default function VpnManagement() {
       return;
     }
 
-    if (user.role !== 'admin') {
+    // Solo el usuario "garv" puede acceder a esta página
+    if (user.username !== 'garv') {
       router.push('/dashboard');
       return;
     }

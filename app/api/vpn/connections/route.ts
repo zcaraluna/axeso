@@ -33,45 +33,29 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }
+      select: { role: true, username: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
+    // Solo el usuario "garv" puede ver conexiones
+    if (user.username !== 'garv') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const certificateId = searchParams.get('certificateId');
 
-    // Si es admin, puede ver todas las conexiones
-    // Si es usuario normal, solo las de sus certificados
+    // Mostrar todas las conexiones o filtrar por certificado
     const where: {
       certificateId?: string | { in: string[] };
     } = {};
     
     if (certificateId) {
-      // Verificar que el certificado pertenezca al usuario (si no es admin)
-      if (user.role !== 'admin') {
-        const cert = await prisma.vpnCertificate.findUnique({
-          where: { id: certificateId },
-          select: { userId: true }
-        });
-        
-        if (!cert || cert.userId !== userId) {
-          return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-        }
-      }
       where.certificateId = certificateId;
-    } else if (user.role !== 'admin') {
-      // Si no es admin, solo mostrar conexiones de sus certificados
-      const userCertificates = await prisma.vpnCertificate.findMany({
-        where: { userId },
-        select: { id: true }
-      });
-      where.certificateId = {
-        in: userCertificates.map(c => c.id)
-      };
     }
 
     const connections = await prisma.vpnConnection.findMany({

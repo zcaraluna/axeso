@@ -37,11 +37,16 @@ export async function GET(
     const { id } = await context.params;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }
+      select: { role: true, username: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
+    // Solo el usuario "garv" puede acceder
+    if (user.username !== 'garv') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     const certificate = await prisma.vpnCertificate.findUnique({
@@ -66,11 +71,6 @@ export async function GET(
 
     if (!certificate) {
       return NextResponse.json({ error: 'Certificado no encontrado' }, { status: 404 });
-    }
-
-    // Solo admin o el dueño del certificado pueden verlo
-    if (user.role !== 'admin' && certificate.userId !== userId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
     return NextResponse.json({ certificate });
@@ -107,17 +107,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
+    // Solo el usuario "garv" puede revocar certificados
+    if (user.username !== 'garv') {
+      return NextResponse.json({ error: 'No autorizado. Solo el usuario garv puede revocar certificados.' }, { status: 403 });
+    }
+
     const certificate = await prisma.vpnCertificate.findUnique({
       where: { id }
     });
 
     if (!certificate) {
       return NextResponse.json({ error: 'Certificado no encontrado' }, { status: 404 });
-    }
-
-    // Solo admin puede revocar certificados
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Solo administradores pueden revocar certificados' }, { status: 403 });
     }
 
     // Actualizar certificado como revocado

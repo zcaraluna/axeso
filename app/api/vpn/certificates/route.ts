@@ -33,16 +33,20 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }
+      select: { role: true, username: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    // Si es admin, mostrar todos los certificados
-    // Si es usuario normal, solo los suyos
-    const where = user.role === 'admin' ? {} : { userId };
+    // Solo el usuario "garv" puede acceder a esta funcionalidad
+    if (user.username !== 'garv') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
+    // Mostrar todos los certificados
+    const where = {};
 
     const certificates = await prisma.vpnCertificate.findMany({
       where,
@@ -89,18 +93,23 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }
+      select: { role: true, username: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
+    // Solo el usuario "garv" puede crear certificados
+    if (user.username !== 'garv') {
+      return NextResponse.json({ error: 'No autorizado. Solo el usuario garv puede crear certificados VPN.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { targetUserId, certificateName, deviceName, location, validityDays = 365, notes } = body;
 
-    // Solo admin puede crear certificados para otros usuarios
-    const finalUserId = user.role === 'admin' && targetUserId ? targetUserId : userId;
+    // Puede crear certificados para otros usuarios o sin asignar
+    const finalUserId = targetUserId || null;
 
     // Validar campos requeridos
     if (!certificateName || !/^[a-zA-Z0-9_-]{1,64}$/.test(certificateName)) {
