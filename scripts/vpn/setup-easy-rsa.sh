@@ -17,13 +17,22 @@ if [ ! -d "$EASY_RSA_DIR" ]; then
     apt-get install -y easy-rsa
 fi
 
-# Crear directorio de trabajo
-mkdir -p "$EASY_RSA_DIR"
+# Crear directorio de trabajo si no existe
+if [ ! -d "$EASY_RSA_DIR" ]; then
+    mkdir -p "$EASY_RSA_DIR"
+fi
+
 cd "$EASY_RSA_DIR"
 
-# Copiar plantillas de easy-rsa
+# Copiar plantillas de easy-rsa solo si no existen
 if [ ! -f "$EASY_RSA_DIR/vars" ]; then
-    make-cadir "$EASY_RSA_DIR"
+    echo "Copiando plantillas de easy-rsa..."
+    make-cadir "$EASY_RSA_DIR" 2>/dev/null || {
+        # Si make-cadir falla porque el directorio existe, copiar manualmente
+        if [ -d "/usr/share/easy-rsa" ]; then
+            cp -r /usr/share/easy-rsa/* "$EASY_RSA_DIR/" 2>/dev/null || true
+        fi
+    }
 fi
 
 # Configurar variables (ajustar según tu organización)
