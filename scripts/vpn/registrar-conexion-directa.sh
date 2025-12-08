@@ -40,7 +40,10 @@ echo ""
 
 # Registrar en base de datos
 echo "Registrando conexión..."
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/vpn/connections" \
+echo "URL: $API_URL/api/vpn/connections"
+echo "Token: ${VPN_API_TOKEN:0:10}..." # Mostrar solo primeros 10 caracteres del token
+
+response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$API_URL/api/vpn/connections" \
     -H "Content-Type: application/json" \
     -H "X-API-Token: $VPN_API_TOKEN" \
     -d "{
@@ -49,13 +52,17 @@ response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/vpn/connections" \
         \"realIpAddress\": \"$PUBLIC_IP\",
         \"bytesReceived\": 0,
         \"bytesSent\": 0
-    }")
+    }" 2>&1)
 
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | head -n-1)
+http_code=$(echo "$response" | grep "HTTP_CODE:" | cut -d':' -f2)
+body=$(echo "$response" | grep -v "HTTP_CODE:")
 
 echo ""
-if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
+if [ -z "$http_code" ]; then
+    echo "✗ Error: No se recibió respuesta del servidor"
+    echo "Respuesta completa: $response"
+    exit 1
+elif [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
     echo "✓ Conexión registrada exitosamente (HTTP $http_code)"
     echo "Respuesta: $body"
 else
