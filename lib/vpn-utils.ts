@@ -77,24 +77,43 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
       return false;
     }
     
-    // Usar localhost para evitar loops y problemas de red
-    const apiUrl = process.env.VPN_API_URL || 'http://localhost:3000';
+    // Usar URL absoluta con localhost para evitar problemas de DNS
+    // El endpoint /api/vpn/connections está en la lista de rutas públicas del middleware
+    const apiUrl = process.env.VPN_API_URL || 'http://127.0.0.1:3000';
     const checkUrl = `${apiUrl}/api/vpn/connections?check=true&realIp=${encodeURIComponent(clientIp)}`;
     
-    // Hacer llamada a la API para verificar conexión activa
-    const response = await fetch(checkUrl, {
+    // Crear un nuevo Request para evitar problemas con el request original
+    const checkRequest = new Request(checkUrl, {
+      method: 'GET',
       headers: {
         'X-API-Token': apiToken,
+        'Host': new URL(apiUrl).host,
       },
-      // Timeout corto para no bloquear
-      signal: AbortSignal.timeout(2000),
-      // Cache: no-store para evitar problemas
-      cache: 'no-store',
     });
     
-    if (response.ok) {
-      const data = await response.json();
-      return data.isActive === true;
+    // Hacer llamada a la API para verificar conexión activa
+    // Usar fetch con timeout manual porque AbortSignal.timeout puede no estar disponible
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    
+    try {
+      const response = await fetch(checkRequest, {
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.isActive === true;
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      // Si es un error de abort (timeout), no loguear como error
+      if (fetchError instanceof Error && fetchError.name !== 'AbortError') {
+        throw fetchError;
+      }
     }
   } catch (error) {
     // Si hay error, solo loguear y continuar con verificación por IP
