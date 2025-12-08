@@ -50,6 +50,9 @@ SERVER_PORT=$(grep -E "^port " "$OPENVPN_DIR/server.conf" | head -1 | awk '{prin
 PROTO=$(grep -E "^proto " "$OPENVPN_DIR/server.conf" | head -1 | awk '{print $2}' || echo "udp")
 
 # Obtener la IP pública del servidor
+# IP fija del servidor (ajustar según tu caso)
+DEFAULT_SERVER_IP="144.202.77.18"
+
 # Intentar obtener desde la interfaz de red principal
 SERVER_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)
 
@@ -58,11 +61,21 @@ if [ -z "$SERVER_IP" ]; then
     SERVER_IP=$(hostname -I | awk '{print $1}')
 fi
 
-# Si aún no se encuentra, usar la IP del servidor (ajustar según tu caso)
+# Si aún no se encuentra, usar la IP por defecto
 if [ -z "$SERVER_IP" ]; then
+    SERVER_IP="$DEFAULT_SERVER_IP"
     echo "ADVERTENCIA: No se pudo detectar la IP del servidor automáticamente"
-    echo "Por favor, ingresa la IP pública del servidor:"
-    read -r SERVER_IP
+    echo "Usando IP por defecto: $SERVER_IP"
+else
+    # Verificar que la IP detectada sea la correcta
+    if [ "$SERVER_IP" != "$DEFAULT_SERVER_IP" ]; then
+        echo "ADVERTENCIA: IP detectada ($SERVER_IP) difiere de la IP por defecto ($DEFAULT_SERVER_IP)"
+        echo "¿Usar IP detectada ($SERVER_IP) o IP por defecto ($DEFAULT_SERVER_IP)? [d]efault/[d]etected: "
+        read -r choice
+        if [ "$choice" != "d" ] && [ "$choice" != "D" ]; then
+            SERVER_IP="$DEFAULT_SERVER_IP"
+        fi
+    fi
 fi
 
 echo "Usando IP del servidor: $SERVER_IP"
@@ -89,11 +102,11 @@ auth SHA256
 disable-dco
 # Comprimir datos
 comp-lzo
-# Enrutar tráfico hacia el servidor a través de VPN (alternativa a redirect-gateway)
-# Si redirect-gateway no funciona, esta ruta específica forzará el tráfico por VPN
-route $SERVER_IP 255.255.255.255
-# Enrutar todo el tráfico a través de VPN (comentado si solo quieres enrutar el servidor)
+# Enrutar todo el tráfico a través de VPN (requiere permisos de administrador)
+# Si redirect-gateway no funciona, puedes descomentar la línea siguiente para enrutar solo el servidor
+# NOTA: La ruta específica puede causar problemas de conectividad a internet
 # redirect-gateway def1
+# route $SERVER_IP 255.255.255.255
 # Logging
 verb 3
 mute 20
