@@ -164,3 +164,4 @@ Las reglas de NAT que agregaste (`MASQUERADE`) **solo afectan el tráfico salien
 La solución más común es asegurar que los puertos 80 y 443 estén explícitamente permitidos en UFW o iptables.
 
 
+

@@ -19,3 +19,4 @@ verb 4
 crl-verify /etc/openvpn/crl.pem
 
 
+
