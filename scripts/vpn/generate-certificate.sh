@@ -50,9 +50,6 @@ SERVER_IP=$(grep -E "^remote " "$OPENVPN_DIR/server.conf" | head -1 | awk '{prin
 SERVER_PORT=$(grep -E "^port " "$OPENVPN_DIR/server.conf" | head -1 | awk '{print $2}' || echo "1194")
 PROTO=$(grep -E "^proto " "$OPENVPN_DIR/server.conf" | head -1 | awk '{print $2}' || echo "udp")
 
-# Obtener el CN del servidor desde el certificado
-SERVER_CN=$(openssl x509 -in "$KEYS_DIR/issued/server.crt" -noout -subject | sed -n 's/.*CN=\([^,]*\).*/\1/p' || echo "server")
-
 # Crear archivo .ovpn
 OVPN_FILE="$CLIENT_CONFIG_DIR/$CERT_NAME.ovpn"
 cat > "$OVPN_FILE" <<EOF
@@ -67,8 +64,6 @@ persist-tun
 ca [inline]
 cert [inline]
 key [inline]
-# Verificación del certificado del servidor
-verify-x509-name "$SERVER_CN" name
 # Configuración de cifrado (compatible con OpenVPN 2.5+)
 cipher AES-256-CBC
 data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC
