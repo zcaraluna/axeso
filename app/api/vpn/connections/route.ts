@@ -40,13 +40,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
       }
       
-      // Buscar conexión activa para esta IP pública (últimos 5 minutos)
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      // Buscar conexión activa para esta IP pública (últimos 30 minutos)
+      // Aumentado a 30 minutos para dar más margen, ya que las conexiones pueden no actualizarse frecuentemente
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
       const activeConnection = await prisma.vpnConnection.findFirst({
         where: {
           realIpAddress: realIp,
           connectedAt: {
-            gte: fiveMinutesAgo
+            gte: thirtyMinutesAgo
           },
           disconnectedAt: null
         },
