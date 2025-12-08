@@ -27,7 +27,8 @@ export function middleware(request: NextRequest) {
     '/vpn-instructions',
     '/_next',
     '/favicon.ico',
-    '/api/vpn/connections' // Endpoint para registrar conexiones (usa token API)
+    '/api/vpn/connections', // Endpoint para registrar conexiones (usa token API)
+    '/api/debug-ip' // Endpoint de debug para verificar IP
   ];
 
   // Verificar si la ruta es pública
