@@ -31,6 +31,7 @@ echo "2. Corrigiendo configuración de listen:"
 echo "----------------------------------------"
 # Cambiar listen de IP específica a todas las interfaces
 if grep -q "listen.*$IP:443" "$NGINX_CONF"; then
+    sed -i "s|listen.*$IP:443 ssl|listen 443 ssl|g" "$NGINX_CONF"
     sed -i "s|listen.*$IP:443|listen 443 ssl|g" "$NGINX_CONF"
     echo "  ✓ Cambiado listen de $IP:443 a 443 (todas las interfaces)"
 else
@@ -38,12 +39,15 @@ else
 fi
 echo ""
 
-echo "3. Corrigiendo proxy_pass a localhost:"
-echo "--------------------------------------"
-# Cambiar proxy_pass de IP externa a localhost
-if grep -q "proxy_pass.*$IP:3000" "$NGINX_CONF"; then
+echo "3. Corrigiendo TODAS las referencias a proxy_pass con IP externa:"
+echo "------------------------------------------------------------------"
+# Buscar y reemplazar todas las referencias a la IP externa en proxy_pass
+CHANGED=0
+if grep -q "proxy_pass.*$IP:3000\|http://$IP:3000\|$IP:3000" "$NGINX_CONF"; then
     sed -i "s|proxy_pass http://$IP:3000|proxy_pass http://localhost:3000|g" "$NGINX_CONF"
+    sed -i "s|http://$IP:3000|http://localhost:3000|g" "$NGINX_CONF"
     sed -i "s|$IP:3000|localhost:3000|g" "$NGINX_CONF"
+    CHANGED=1
     echo "  ✓ Cambiado proxy_pass de $IP:3000 a localhost:3000"
 else
     echo "  ✓ Ya está configurado para usar localhost"
