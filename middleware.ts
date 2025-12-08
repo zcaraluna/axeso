@@ -28,16 +28,14 @@ export function middleware(request: NextRequest) {
     }
 
     // Rutas que no requieren VPN
-    // Verificar rutas exactas y prefijos específicos
+    // SOLO permitir página de aviso y archivos estáticos
+    // TODO LO DEMÁS requiere VPN (incluyendo /login, /api/auth/login, etc.)
     const isPublicPath = 
-      pathname === '/' ||
       pathname === '/favicon.ico' ||
-      pathname.startsWith('/api/auth/login') ||
       pathname.startsWith('/vpn-setup') ||
-      pathname.startsWith('/vpn-instructions') ||
       pathname.startsWith('/_next/') ||
-      pathname.startsWith('/api/vpn/connections') ||
-      pathname.startsWith('/api/debug-ip');
+      pathname.startsWith('/api/vpn/connections') || // Para registrar conexiones desde OpenVPN
+      pathname.startsWith('/api/debug-ip'); // Para debugging
 
     if (isPublicPath) {
       console.log(`[VPN Middleware] Ruta pública, permitiendo acceso: ${pathname}`);

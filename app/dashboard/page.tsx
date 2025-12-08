@@ -202,12 +202,12 @@ export default function Dashboard() {
                   <img src="/shield-account-variant.svg" alt="Gestión de Usuarios" className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform" />
                   <h2 className="text-xl font-bold text-slate-800 group-hover:text-orange-600 transition">
                     Gestión de Usuarios
-                  </h2>
-                </div>
-                <p className="text-slate-600">
-                  Administrar usuarios del personal de guardia
-                </p>
+                </h2>
               </div>
+              <p className="text-slate-600">
+                Administrar usuarios del personal de guardia
+              </p>
+            </div>
             </Link>
           )}
           {user?.username === 'garv' && (
