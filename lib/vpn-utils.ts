@@ -30,16 +30,17 @@ export function isIpInVpnRange(ip: string, vpnRange: string = '10.8.0.0/24'): bo
  * Extrae la IP real del cliente desde los headers de la request
  */
 export function getClientIp(request: Request): string {
-  // Intentar obtener IP desde varios headers comunes
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    // x-forwarded-for puede contener múltiples IPs, tomar la primera
-    return forwardedFor.split(',')[0].trim();
-  }
-
+  // Intentar obtener IP desde varios headers comunes (en orden de prioridad)
   const realIp = request.headers.get('x-real-ip');
   if (realIp) {
     return realIp.trim();
+  }
+
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    // x-forwarded-for puede contener múltiples IPs, tomar la primera (IP original del cliente)
+    const ips = forwardedFor.split(',').map(ip => ip.trim());
+    return ips[0];
   }
 
   const cfConnectingIp = request.headers.get('cf-connecting-ip'); // Cloudflare
@@ -47,6 +48,7 @@ export function getClientIp(request: Request): string {
     return cfConnectingIp.trim();
   }
 
+  // Si no hay headers, intentar desde la conexión directa (solo en desarrollo)
   return 'unknown';
 }
 

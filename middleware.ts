@@ -40,8 +40,14 @@ export function middleware(request: NextRequest) {
   }
 
   // Verificar conexión VPN
-  const isConnected = isVpnConnected(request);
   const clientIp = getClientIp(request);
+  const isConnected = isVpnConnected(request);
+  const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
+
+  // Logging para debugging (solo en producción para ver qué está pasando)
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`[VPN Middleware] Path: ${pathname}, IP: ${clientIp}, VPN Range: ${vpnRange}, Connected: ${isConnected}`);
+  }
 
   if (!isConnected) {
     // Redirigir a página de instrucciones VPN
@@ -50,6 +56,7 @@ export function middleware(request: NextRequest) {
     url.searchParams.set('redirect', pathname);
     url.searchParams.set('ip', clientIp);
     
+    console.log(`[VPN Middleware] Bloqueando acceso - IP: ${clientIp} no está en rango VPN ${vpnRange}`);
     return NextResponse.redirect(url);
   }
 
