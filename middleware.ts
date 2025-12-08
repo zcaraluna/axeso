@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
     // En Edge Runtime, las variables de entorno pueden no estar disponibles
     // Si no está disponible o es cualquier valor distinto de 'true', permitir acceso
     const vpnRequiredEnv = process.env.VPN_REQUIRED;
-    const vpnRequired = vpnRequiredEnv === 'true' || vpnRequiredEnv === true;
+    const vpnRequired = vpnRequiredEnv === 'true';
     console.log(`[VPN Middleware] VPN_REQUIRED env=${vpnRequiredEnv}, parsed=${vpnRequired}`);
   
     // Si VPN_REQUIRED no es exactamente 'true', permitir todo el tráfico
