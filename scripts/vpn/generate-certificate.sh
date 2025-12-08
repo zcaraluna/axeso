@@ -46,9 +46,26 @@ echo "Generando certificado para $CERT_NAME..."
 mkdir -p "$CLIENT_CONFIG_DIR"
 
 # Obtener configuración del servidor
-SERVER_IP=$(grep -E "^remote " "$OPENVPN_DIR/server.conf" | head -1 | awk '{print $2}' || echo "TU_SERVIDOR_IP")
 SERVER_PORT=$(grep -E "^port " "$OPENVPN_DIR/server.conf" | head -1 | awk '{print $2}' || echo "1194")
 PROTO=$(grep -E "^proto " "$OPENVPN_DIR/server.conf" | head -1 | awk '{print $2}' || echo "udp")
+
+# Obtener la IP pública del servidor
+# Intentar obtener desde la interfaz de red principal
+SERVER_IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)
+
+# Si no se encuentra, intentar desde hostname
+if [ -z "$SERVER_IP" ]; then
+    SERVER_IP=$(hostname -I | awk '{print $1}')
+fi
+
+# Si aún no se encuentra, usar la IP del servidor (ajustar según tu caso)
+if [ -z "$SERVER_IP" ]; then
+    echo "ADVERTENCIA: No se pudo detectar la IP del servidor automáticamente"
+    echo "Por favor, ingresa la IP pública del servidor:"
+    read -r SERVER_IP
+fi
+
+echo "Usando IP del servidor: $SERVER_IP"
 
 # Crear archivo .ovpn
 OVPN_FILE="$CLIENT_CONFIG_DIR/$CERT_NAME.ovpn"

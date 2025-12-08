@@ -17,13 +17,16 @@ export function middleware(request: NextRequest) {
     
     // Verificar si la verificación VPN está habilitada
     // En Edge Runtime, las variables de entorno pueden no estar disponibles
+    // Si no está disponible o es cualquier valor distinto de 'true', permitir acceso
     const vpnRequiredEnv = process.env.VPN_REQUIRED;
-    const vpnRequired = vpnRequiredEnv === 'true';
+    const vpnRequired = vpnRequiredEnv === 'true' || vpnRequiredEnv === true;
     console.log(`[VPN Middleware] VPN_REQUIRED env=${vpnRequiredEnv}, parsed=${vpnRequired}`);
   
+    // Si VPN_REQUIRED no es exactamente 'true', permitir todo el tráfico
+    // Esto incluye: undefined, null, 'false', '', o cualquier otro valor
     if (!vpnRequired) {
       // Si no está habilitado, permitir todo el tráfico
-      console.log(`[VPN Middleware] VPN no requerido, permitiendo acceso`);
+      console.log(`[VPN Middleware] VPN no requerido (env=${vpnRequiredEnv}), permitiendo acceso`);
       return NextResponse.next();
     }
 
