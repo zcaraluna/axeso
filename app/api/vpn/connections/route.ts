@@ -40,14 +40,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
       }
       
-      // Buscar conexión activa para esta IP pública (últimos 30 minutos)
-      // Aumentado a 30 minutos para dar más margen, ya que las conexiones pueden no actualizarse frecuentemente
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      // Buscar conexión activa para esta IP pública (últimos 2 minutos)
+      // Si la conexión tiene más de 2 minutos sin actualizarse, se considera inactiva
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
       const activeConnection = await prisma.vpnConnection.findFirst({
         where: {
           realIpAddress: realIp,
           connectedAt: {
-            gte: thirtyMinutesAgo
+            gte: twoMinutesAgo
           },
           disconnectedAt: null
         },
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { certificateName, ipAddress, realIpAddress, bytesReceived = 0, bytesSent = 0 } = body;
+    const { certificateName, ipAddress, realIpAddress, bytesReceived = 0, bytesSent = 0, disconnected } = body;
 
     if (!certificateName || !ipAddress) {
       return NextResponse.json(
@@ -174,6 +174,38 @@ export async function POST(request: NextRequest) {
         { error: 'Certificado no está activo' },
         { status: 400 }
       );
+    }
+
+    // Si es una desconexión, marcar la última conexión activa como desconectada
+    if (disconnected) {
+      const activeConnection = await prisma.vpnConnection.findFirst({
+        where: {
+          certificateId: certificate.id,
+          ipAddress,
+          disconnectedAt: null
+        },
+        orderBy: {
+          connectedAt: 'desc'
+        }
+      });
+
+      if (activeConnection) {
+        await prisma.vpnConnection.update({
+          where: { id: activeConnection.id },
+          data: {
+            disconnectedAt: new Date()
+          }
+        });
+        
+        return NextResponse.json({ 
+          message: 'Desconexión registrada',
+          connectionId: activeConnection.id 
+        }, { status: 200 });
+      } else {
+        return NextResponse.json({ 
+          message: 'No se encontró conexión activa para desconectar' 
+        }, { status: 404 });
+      }
     }
 
     // Crear registro de conexión
