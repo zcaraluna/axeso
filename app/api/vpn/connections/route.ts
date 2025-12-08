@@ -195,7 +195,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ connection }, { status: 201 });
+    // Convertir BigInt a números para la respuesta JSON
+    return NextResponse.json({ 
+      connection: {
+        ...connection,
+        bytesReceived: connection.bytesReceived.toString(),
+        bytesSent: connection.bytesSent.toString()
+      }
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating VPN connection:', error);
     return NextResponse.json(
