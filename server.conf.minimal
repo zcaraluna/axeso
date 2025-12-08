@@ -18,3 +18,4 @@ log /var/log/openvpn.log
 verb 4
 crl-verify /etc/openvpn/crl.pem
 
+

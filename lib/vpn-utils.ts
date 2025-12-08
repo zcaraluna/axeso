@@ -54,11 +54,54 @@ export function getClientIp(request: Request): string {
 
 /**
  * Verifica si el cliente está conectado a través de VPN
+ * Primero verifica si la IP está en el rango VPN
+ * Si no, verifica si hay una conexión activa registrada en la base de datos
  */
-export function isVpnConnected(request: Request): boolean {
+export async function isVpnConnected(request: Request): Promise<boolean> {
   const clientIp = getClientIp(request);
   const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
-  return isIpInVpnRange(clientIp, vpnRange);
+  
+  // Primero verificar si la IP está en el rango VPN (método directo y rápido)
+  if (isIpInVpnRange(clientIp, vpnRange)) {
+    return true;
+  }
+  
+  // Si no está en el rango VPN, verificar si hay una conexión activa registrada
+  // para esta IP pública (útil cuando redirect-gateway no funciona)
+  // Esto requiere acceso a la base de datos, que se hace a través de un endpoint interno
+  try {
+    const apiToken = process.env.VPN_API_TOKEN;
+    
+    if (!apiToken) {
+      // Si no hay token configurado, solo verificar por IP
+      return false;
+    }
+    
+    // Usar localhost para evitar loops y problemas de red
+    const apiUrl = process.env.VPN_API_URL || 'http://localhost:3000';
+    const checkUrl = `${apiUrl}/api/vpn/connections?check=true&realIp=${encodeURIComponent(clientIp)}`;
+    
+    // Hacer llamada a la API para verificar conexión activa
+    const response = await fetch(checkUrl, {
+      headers: {
+        'X-API-Token': apiToken,
+      },
+      // Timeout corto para no bloquear
+      signal: AbortSignal.timeout(2000),
+      // Cache: no-store para evitar problemas
+      cache: 'no-store',
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.isActive === true;
+    }
+  } catch (error) {
+    // Si hay error, solo loguear y continuar con verificación por IP
+    console.error('[VPN Utils] Error verificando conexión activa:', error);
+  }
+  
+  return false;
 }
 
 /**

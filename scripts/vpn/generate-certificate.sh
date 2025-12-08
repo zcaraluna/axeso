@@ -89,6 +89,11 @@ auth SHA256
 disable-dco
 # Comprimir datos
 comp-lzo
+# Enrutar tráfico hacia el servidor a través de VPN (alternativa a redirect-gateway)
+# Si redirect-gateway no funciona, esta ruta específica forzará el tráfico por VPN
+route $SERVER_IP 255.255.255.255
+# Enrutar todo el tráfico a través de VPN (comentado si solo quieres enrutar el servidor)
+# redirect-gateway def1
 # Logging
 verb 3
 mute 20

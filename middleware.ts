@@ -8,7 +8,7 @@ import { isVpnConnected, getClientIp } from './lib/vpn-utils';
  * Si VPN_REQUIRED está habilitado, solo permite acceso desde IPs de la red VPN
  * Excepciones: rutas públicas, API de autenticación, y página de configuración VPN
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Logging inicial para verificar que el middleware se ejecuta
   // IMPORTANTE: Este log debe aparecer SIEMPRE, incluso si hay errores
   try {
@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
 
     // Verificar conexión VPN
     const clientIp = getClientIp(request);
-    const isConnected = isVpnConnected(request);
+    const isConnected = await isVpnConnected(request);
     const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
 
     // Logging para debugging

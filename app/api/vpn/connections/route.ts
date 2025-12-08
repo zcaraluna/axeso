@@ -22,10 +22,53 @@ function getUserIdFromToken(request: NextRequest): string | null {
 
 /**
  * GET /api/vpn/connections
- * Obtiene el historial de conexiones VPN
+ * Obtiene el historial de conexiones VPN o verifica si hay una conexión activa
  */
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const realIp = searchParams.get('realIp');
+    const check = searchParams.get('check');
+    
+    // Endpoint para verificar conexión activa (usado por el middleware)
+    if (check === 'true' && realIp) {
+      const apiToken = request.headers.get('x-api-token');
+      const expectedToken = process.env.VPN_API_TOKEN;
+      
+      // Verificar token de API
+      if (!expectedToken || apiToken !== expectedToken) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+      
+      // Buscar conexión activa para esta IP pública (últimos 5 minutos)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const activeConnection = await prisma.vpnConnection.findFirst({
+        where: {
+          realIpAddress: realIp,
+          connectedAt: {
+            gte: fiveMinutesAgo
+          },
+          disconnectedAt: null
+        },
+        include: {
+          certificate: {
+            select: {
+              status: true,
+              certificateName: true
+            }
+          }
+        },
+        orderBy: {
+          connectedAt: 'desc'
+        }
+      });
+      
+      return NextResponse.json({ 
+        isActive: activeConnection !== null && activeConnection.certificate.status === 'active'
+      });
+    }
+    
+    // Endpoint normal para obtener historial (requiere autenticación)
     const userId = getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -45,7 +88,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const certificateId = searchParams.get('certificateId');
 
