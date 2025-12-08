@@ -1,20 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function VpnSetupPage() {
+function VpnSetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [clientIp, setClientIp] = useState<string>('');
-  const [redirectPath, setRedirectPath] = useState<string>('');
 
   useEffect(() => {
     const ip = searchParams.get('ip') || 'No detectada';
-    const redirect = searchParams.get('redirect') || '/dashboard';
     setClientIp(ip);
-    setRedirectPath(redirect);
   }, [searchParams]);
 
   return (
@@ -121,6 +118,18 @@ export default function VpnSetupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VpnSetupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
+        <div className="text-white text-xl">Cargando...</div>
+      </div>
+    }>
+      <VpnSetupContent />
+    </Suspense>
   );
 }
 

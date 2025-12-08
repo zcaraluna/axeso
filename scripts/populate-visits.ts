@@ -189,6 +189,7 @@ async function main() {
         nombres: getRandomElement(nombres),
         apellidos: getRandomElement(apellidos),
         cedula: generateRandomCedula(),
+        tipoDocumento: 'Cédula de Identidad',
         fechaNacimiento,
         edad,
         telefono: generateRandomPhone(),

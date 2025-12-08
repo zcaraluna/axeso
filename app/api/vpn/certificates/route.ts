@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getClientIp } from '@/lib/vpn-utils';
 import jwt from 'jsonwebtoken';
 
 /**

@@ -87,7 +87,7 @@ export default function VpnInstructionsPage() {
                     Android / iOS
                   </h3>
                   <ol className="list-decimal list-inside space-y-2 text-slate-700 ml-4">
-                    <li>Instale "OpenVPN Connect" desde Google Play Store o App Store</li>
+                    <li>Instale &quot;OpenVPN Connect&quot; desde Google Play Store o App Store</li>
                     <li>La aplicación está disponible de forma gratuita</li>
                   </ol>
                 </div>
@@ -129,7 +129,7 @@ export default function VpnInstructionsPage() {
                 Una vez conectado a la VPN, debería poder acceder al sistema normalmente. Si aún tiene problemas:
               </p>
               <ul className="list-disc list-inside space-y-2 text-slate-700 ml-4">
-                <li>Verifique que el cliente OpenVPN muestre "Connected" o "Conectado"</li>
+                <li>Verifique que el cliente OpenVPN muestre &quot;Connected&quot; o &quot;Conectado&quot;</li>
                 <li>Verifique que su IP esté en el rango de la VPN (10.8.0.x)</li>
                 <li>Intente recargar la página del sistema</li>
                 <li>Contacte al administrador si el problema persiste</li>
@@ -142,7 +142,7 @@ export default function VpnInstructionsPage() {
               </h2>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <h3 className="font-semibold text-yellow-800 mb-2">
-                  Error: "Cannot resolve hostname"
+                  Error: &quot;Cannot resolve hostname&quot;
                 </h3>
                 <p className="text-yellow-700 text-sm">
                   Verifique que el servidor VPN esté accesible y que su conexión a internet funcione correctamente.
@@ -150,7 +150,7 @@ export default function VpnInstructionsPage() {
               </div>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <h3 className="font-semibold text-yellow-800 mb-2">
-                  Error: "Authentication failed"
+                  Error: &quot;Authentication failed&quot;
                 </h3>
                 <p className="text-yellow-700 text-sm">
                   Verifique que sus credenciales sean correctas. Si el problema persiste, contacte al administrador

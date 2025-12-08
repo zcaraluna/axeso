@@ -46,7 +46,9 @@ export async function GET(request: NextRequest) {
 
     // Si es admin, puede ver todas las conexiones
     // Si es usuario normal, solo las de sus certificados
-    const where: any = {};
+    const where: {
+      certificateId?: string | { in: string[] };
+    } = {};
     
     if (certificateId) {
       // Verificar que el certificado pertenezca al usuario (si no es admin)

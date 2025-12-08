@@ -87,8 +87,8 @@ export default function VpnManagement() {
         return;
       }
 
-      setCertificates(certsResponse.data?.certificates || []);
-      setUsers(usersResponse.data?.users || []);
+      setCertificates((certsResponse.data as { certificates?: VpnCertificate[] })?.certificates || []);
+      setUsers((usersResponse.data as { users?: User[] })?.users || []);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Error al cargar datos');
