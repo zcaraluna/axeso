@@ -7,7 +7,7 @@ import { getClientIp, isVpnConnected } from '@/lib/vpn-utils';
  */
 export async function GET(request: NextRequest) {
   const clientIp = getClientIp(request);
-  const isVpn = isVpnConnected(request);
+  const isVpn = await isVpnConnected(request);
   const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
 
   const headers = {
