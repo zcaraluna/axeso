@@ -23,14 +23,19 @@ const API_URL = process.env.VPN_API_URL || 'http://localhost:3000';
 const API_TOKEN = process.env.VPN_API_TOKEN || '';
 
 async function registerConnection() {
+  // IMPORTANTE: Este script NO debe bloquear la conexión VPN si falla
+  // Si hay errores, los logueamos pero salimos con código 0 para permitir la conexión
+  
   if (!certificateName || !ipAddress) {
-    console.error('Error: certificateName e ipAddress son requeridos');
-    process.exit(1);
+    console.error(`[VPN Register] Error: certificateName (${certificateName}) o ipAddress (${ipAddress}) faltantes`);
+    // Salir con éxito para no bloquear la conexión VPN
+    process.exit(0);
   }
 
   if (!API_TOKEN) {
-    console.error('Error: VPN_API_TOKEN no está configurado');
-    process.exit(1);
+    console.error('[VPN Register] Advertencia: VPN_API_TOKEN no está configurado. La conexión se permitirá pero no se registrará.');
+    // Salir con éxito para no bloquear la conexión VPN
+    process.exit(0);
   }
 
   try {
@@ -52,7 +57,9 @@ async function registerConnection() {
         'Content-Type': 'application/json',
         'Content-Length': data.length,
         'X-API-Token': API_TOKEN
-      }
+      },
+      // Timeout para evitar que el script se cuelgue
+      timeout: 5000
     };
 
     const requestModule = url.protocol === 'https:' ? https : http;
@@ -67,28 +74,39 @@ async function registerConnection() {
 
         res.on('end', () => {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            console.log(`Conexión registrada: ${certificateName} -> ${ipAddress}`);
+            console.log(`[VPN Register] Conexión registrada: ${certificateName} -> ${ipAddress} (real: ${realIpAddress || 'N/A'})`);
             resolve();
           } else {
-            console.error(`Error al registrar conexión: ${res.statusCode} - ${responseData}`);
-            reject(new Error(`HTTP ${res.statusCode}`));
+            console.error(`[VPN Register] Error HTTP ${res.statusCode}: ${responseData}`);
+            // No rechazar, solo loguear el error
+            resolve();
           }
         });
       });
 
       req.on('error', (error) => {
-        console.error(`Error de conexión: ${error.message}`);
-        reject(error);
+        console.error(`[VPN Register] Error de conexión a API: ${error.message}`);
+        // No rechazar, solo loguear el error
+        resolve();
       });
 
+      req.on('timeout', () => {
+        console.error('[VPN Register] Timeout al conectar con la API');
+        req.destroy();
+        resolve();
+      });
+
+      req.setTimeout(5000);
       req.write(data);
       req.end();
     });
 
+    // Siempre salir con éxito para no bloquear la conexión VPN
     process.exit(0);
   } catch (error) {
-    console.error('Error al registrar conexión VPN:', error);
-    process.exit(1);
+    console.error('[VPN Register] Error inesperado:', error);
+    // Siempre salir con éxito para no bloquear la conexión VPN
+    process.exit(0);
   }
 }
 
