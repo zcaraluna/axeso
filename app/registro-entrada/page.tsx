@@ -6,6 +6,23 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
 
+interface Visit {
+  id: string;
+  nombres: string;
+  apellidos: string;
+  cedula: string;
+  tipoDocumento: string;
+  telefono: string;
+  entryDate: string;
+  entryTime: string;
+  motivoCategoria: string;
+  motivoDescripcion: string;
+  exitDate?: string;
+  exitTime?: string;
+  registeredBy: string;
+  exitRegisteredBy?: string;
+}
+
 export default function RegistroEntrada() {
   const [formData, setFormData] = useState({
     nombres: '',

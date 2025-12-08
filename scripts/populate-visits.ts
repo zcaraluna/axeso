@@ -112,9 +112,21 @@ function generateRandomPhone(): string {
   return prefix + number.toString().padStart(6, '0')
 }
 
-function generateRandomTipoDocumento(): string {
-  const tipos = ['Cédula de Identidad', 'Pasaporte', 'Cédula Extranjera', 'Otro']
-  return getRandomElement(tipos)
+function generateRandomBirthDate(): Date {
+  const year = 1950 + Math.floor(Math.random() * 50) // 1950-2000
+  const month = Math.floor(Math.random() * 12)
+  const day = Math.floor(Math.random() * 28) + 1
+  return new Date(year, month, day)
+}
+
+function calculateAge(birthDate: Date): number {
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
 }
 
 async function main() {
@@ -169,13 +181,16 @@ async function main() {
       const entryTime = getRandomTime()
       const motivo = getRandomElement(motivosCategoria)
       const descripcion = getRandomElement(descripcionesMotivos[motivo as keyof typeof descripcionesMotivos])
+      const fechaNacimiento = generateRandomBirthDate()
+      const edad = calculateAge(fechaNacimiento)
       const user = getRandomElement(users)
       
       const visit = {
         nombres: getRandomElement(nombres),
         apellidos: getRandomElement(apellidos),
         cedula: generateRandomCedula(),
-        tipoDocumento: generateRandomTipoDocumento(),
+        fechaNacimiento,
+        edad,
         telefono: generateRandomPhone(),
         entryDate: currentDate.toLocaleDateString('es-PY', { 
           day: '2-digit', 

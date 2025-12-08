@@ -29,6 +29,7 @@ model User {
   updatedAt             DateTime @updatedAt
 
   visits Visit[]
+  vpnCertificates VpnCertificate[]
 
   @@map("users")
 }
@@ -56,4 +57,43 @@ model Visit {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("visits")
+}
+
+model VpnCertificate {
+  id              String   @id @default(cuid())
+  userId          String?  // Opcional: puede ser asignado a un usuario específico o a una computadora
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  certificateName String   @unique // Nombre del certificado (ej: computadora-recepcion-01)
+  deviceName      String   // Nombre de la computadora/dispositivo (ej: "Recepción - PC 01")
+  location        String?  // Ubicación física (ej: "Recepción Principal", "Oficina 2")
+  commonName      String   // CN del certificado
+  status          String   @default("active") // "active", "revoked", "expired"
+  issuedAt        DateTime @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  revokedBy       String?
+  lastUsedAt      DateTime?
+  ipAddress       String?  // Última IP desde la que se conectó
+  notes           String?  // Notas adicionales (ej: "Computadora de recepción principal")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  connections     VpnConnection[]
+
+  @@map("vpn_certificates")
+}
+
+model VpnConnection {
+  id              String   @id @default(cuid())
+  certificateId   String
+  certificate     VpnCertificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  ipAddress       String   // IP asignada por OpenVPN
+  realIpAddress   String?  // IP real del cliente (si está disponible)
+  connectedAt     DateTime @default(now())
+  disconnectedAt  DateTime?
+  bytesReceived   BigInt   @default(0)
+  bytesSent       BigInt   @default(0)
+  duration        Int?     // Duración en segundos
+
+  @@map("vpn_connections")
 }
