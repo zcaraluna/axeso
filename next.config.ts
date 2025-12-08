@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Optimizaciones para producción
-  output: 'standalone',
+  // output: 'standalone', // Comentado: causa problemas con middleware y requiere comando diferente
   compress: true,
   poweredByHeader: false,
   

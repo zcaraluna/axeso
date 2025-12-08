@@ -9,67 +9,80 @@ import { isVpnConnected, getClientIp } from './lib/vpn-utils';
  * Excepciones: rutas públicas, API de autenticación, y página de configuración VPN
  */
 export function middleware(request: NextRequest) {
-  // Verificar si la verificación VPN está habilitada
-  const vpnRequired = process.env.VPN_REQUIRED === 'true';
-  
-  if (!vpnRequired) {
-    // Si no está habilitado, permitir todo el tráfico
-    return NextResponse.next();
-  }
-
-  const pathname = request.nextUrl.pathname;
-  
-  // Rutas que no requieren VPN
-  const publicPaths = [
-    '/',
-    '/api/auth/login',
-    '/vpn-setup',
-    '/vpn-instructions',
-    '/_next',
-    '/favicon.ico',
-    '/api/vpn/connections', // Endpoint para registrar conexiones (usa token API)
-    '/api/debug-ip' // Endpoint de debug para verificar IP
-  ];
-
-  // Verificar si la ruta es pública
-  const isPublicPath = publicPaths.some(path => 
-    pathname === path || pathname.startsWith(path)
-  );
-
-  if (isPublicPath) {
-    return NextResponse.next();
-  }
-
-  // Verificar conexión VPN
-  const clientIp = getClientIp(request);
-  const isConnected = isVpnConnected(request);
-  const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
-
-  // Logging para debugging (solo en producción para ver qué está pasando)
-  if (process.env.NODE_ENV === 'production') {
-    console.log(`[VPN Middleware] Path: ${pathname}, IP: ${clientIp}, VPN Range: ${vpnRange}, Connected: ${isConnected}`);
-  }
-
-  if (!isConnected) {
-    // Redirigir a página de instrucciones VPN
-    const url = request.nextUrl.clone();
-    url.pathname = '/vpn-setup';
-    url.searchParams.set('redirect', pathname);
-    url.searchParams.set('ip', clientIp);
+  // Logging inicial para verificar que el middleware se ejecuta
+  // IMPORTANTE: Este log debe aparecer SIEMPRE, incluso si hay errores
+  try {
+    const pathname = request.nextUrl.pathname;
+    console.log(`[VPN Middleware] INICIO - Path: ${pathname}`);
     
-    console.log(`[VPN Middleware] Bloqueando acceso - IP: ${clientIp} no está en rango VPN ${vpnRange}`);
-    return NextResponse.redirect(url);
-  }
+    // Verificar si la verificación VPN está habilitada
+    // En Edge Runtime, las variables de entorno pueden no estar disponibles
+    const vpnRequiredEnv = process.env.VPN_REQUIRED;
+    const vpnRequired = vpnRequiredEnv === 'true';
+    console.log(`[VPN Middleware] VPN_REQUIRED env=${vpnRequiredEnv}, parsed=${vpnRequired}`);
+  
+    if (!vpnRequired) {
+      // Si no está habilitado, permitir todo el tráfico
+      console.log(`[VPN Middleware] VPN no requerido, permitiendo acceso`);
+      return NextResponse.next();
+    }
 
-  // Agregar header con información de VPN para debugging (solo en desarrollo)
-  if (process.env.NODE_ENV === 'development') {
-    const response = NextResponse.next();
-    response.headers.set('X-VPN-IP', clientIp);
-    response.headers.set('X-VPN-Status', 'connected');
-    return response;
-  }
+    // Rutas que no requieren VPN
+    const publicPaths = [
+      '/',
+      '/api/auth/login',
+      '/vpn-setup',
+      '/vpn-instructions',
+      '/_next',
+      '/favicon.ico',
+      '/api/vpn/connections', // Endpoint para registrar conexiones (usa token API)
+      '/api/debug-ip' // Endpoint de debug para verificar IP
+    ];
 
-  return NextResponse.next();
+    // Verificar si la ruta es pública
+    const isPublicPath = publicPaths.some(path => 
+      pathname === path || pathname.startsWith(path)
+    );
+
+    if (isPublicPath) {
+      console.log(`[VPN Middleware] Ruta pública, permitiendo acceso: ${pathname}`);
+      return NextResponse.next();
+    }
+
+    // Verificar conexión VPN
+    const clientIp = getClientIp(request);
+    const isConnected = isVpnConnected(request);
+    const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
+
+    // Logging para debugging
+    console.log(`[VPN Middleware] Path: ${pathname}, IP: ${clientIp}, VPN Range: ${vpnRange}, Connected: ${isConnected}`);
+
+    if (!isConnected) {
+      // Redirigir a página de instrucciones VPN
+      const url = request.nextUrl.clone();
+      url.pathname = '/vpn-setup';
+      url.searchParams.set('redirect', pathname);
+      url.searchParams.set('ip', clientIp);
+      
+      console.log(`[VPN Middleware] Bloqueando acceso - IP: ${clientIp} no está en rango VPN ${vpnRange}`);
+      return NextResponse.redirect(url);
+    }
+
+    // Agregar header con información de VPN para debugging (solo en desarrollo)
+    if (process.env.NODE_ENV === 'development') {
+      const response = NextResponse.next();
+      response.headers.set('X-VPN-IP', clientIp);
+      response.headers.set('X-VPN-Status', 'connected');
+      return response;
+    }
+
+    console.log(`[VPN Middleware] Acceso permitido - IP: ${clientIp} está en rango VPN`);
+    return NextResponse.next();
+  } catch (error) {
+    // Si hay un error, loguearlo pero permitir el acceso para no romper la aplicación
+    console.error(`[VPN Middleware] ERROR:`, error);
+    return NextResponse.next();
+  }
 }
 
 // Configurar qué rutas deben pasar por el middleware
