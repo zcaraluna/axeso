@@ -196,17 +196,28 @@ export async function POST(request: NextRequest) {
     });
 
     // Convertir BigInt a números para la respuesta JSON
-    return NextResponse.json({ 
-      connection: {
-        ...connection,
-        bytesReceived: connection.bytesReceived.toString(),
-        bytesSent: connection.bytesSent.toString()
-      }
-    }, { status: 201 });
+    // Convertir BigInt a strings para la respuesta JSON
+    const connectionResponse = {
+      id: connection.id,
+      certificateId: connection.certificateId,
+      ipAddress: connection.ipAddress,
+      realIpAddress: connection.realIpAddress,
+      bytesReceived: connection.bytesReceived.toString(),
+      bytesSent: connection.bytesSent.toString(),
+      connectedAt: connection.connectedAt.toISOString(),
+      disconnectedAt: connection.disconnectedAt?.toISOString() || null
+    };
+
+    return NextResponse.json({ connection: connectionResponse }, { status: 201 });
   } catch (error) {
     console.error('Error creating VPN connection:', error);
+    // Log más detallado del error
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json(
-      { error: 'Error al registrar conexión' },
+      { error: 'Error al registrar conexión', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
