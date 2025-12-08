@@ -28,21 +28,16 @@ export function middleware(request: NextRequest) {
     }
 
     // Rutas que no requieren VPN
-    const publicPaths = [
-      '/',
-      '/api/auth/login',
-      '/vpn-setup',
-      '/vpn-instructions',
-      '/_next',
-      '/favicon.ico',
-      '/api/vpn/connections', // Endpoint para registrar conexiones (usa token API)
-      '/api/debug-ip' // Endpoint de debug para verificar IP
-    ];
-
-    // Verificar si la ruta es pública
-    const isPublicPath = publicPaths.some(path => 
-      pathname === path || pathname.startsWith(path)
-    );
+    // Verificar rutas exactas y prefijos específicos
+    const isPublicPath = 
+      pathname === '/' ||
+      pathname === '/favicon.ico' ||
+      pathname.startsWith('/api/auth/login') ||
+      pathname.startsWith('/vpn-setup') ||
+      pathname.startsWith('/vpn-instructions') ||
+      pathname.startsWith('/_next/') ||
+      pathname.startsWith('/api/vpn/connections') ||
+      pathname.startsWith('/api/debug-ip');
 
     if (isPublicPath) {
       console.log(`[VPN Middleware] Ruta pública, permitiendo acceso: ${pathname}`);
