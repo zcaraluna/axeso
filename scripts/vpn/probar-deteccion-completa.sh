@@ -18,28 +18,46 @@ echo "1. Leyendo conexiones activas del archivo de estado:"
 echo "---------------------------------------------------"
 if [ -f "$STATUS_FILE" ] && [ -r "$STATUS_FILE" ]; then
     # Extraer IPs reales de las conexiones activas
-    REAL_IPS=$(grep -v "^#" "$STATUS_FILE" | grep -v "^CLIENT LIST" | grep -v "^ROUTING TABLE" | grep -v "^GLOBAL STATS" | grep -v "^Updated" | grep -v "^END" | grep -v "^$" | grep "," | awk -F',' '{print $2}' | awk -F':' '{print $1}' | sort -u)
+    # Solo líneas que tienen formato IP:PUERTO (contienen punto y dos puntos)
+    REAL_IPS=$(grep -v "^#" "$STATUS_FILE" | \
+        grep -v "^CLIENT LIST" | \
+        grep -v "^ROUTING TABLE" | \
+        grep -v "^GLOBAL STATS" | \
+        grep -v "^Updated" | \
+        grep -v "^END" | \
+        grep -v "^Common Name" | \
+        grep -v "^Virtual Address" | \
+        grep -v "^Max bcast" | \
+        grep -v "^$" | \
+        grep "," | \
+        awk -F',' '{print $2}' | \
+        awk -F':' '{print $1}' | \
+        grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" | \
+        sort -u)
     
     if [ -n "$REAL_IPS" ]; then
         echo "✓ IPs reales encontradas:"
         echo "$REAL_IPS" | while read IP; do
-            if [ -n "$IP" ]; then
+            if [ -n "$IP" ] && [[ "$IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                 echo "  - $IP"
             fi
         done
         
-        # Tomar la primera IP para pruebas
-        TEST_IP=$(echo "$REAL_IPS" | head -1)
+        # Tomar la primera IP válida para pruebas
+        TEST_IP=$(echo "$REAL_IPS" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
+        if [ -z "$TEST_IP" ]; then
+            TEST_IP="181.91.85.248"  # IP conocida de la conexión activa
+        fi
         echo ""
         echo "  Usando IP de prueba: $TEST_IP"
     else
         echo "⚠ No se encontraron conexiones activas"
-        TEST_IP="127.0.0.1"
+        TEST_IP="181.91.85.248"  # IP conocida de la conexión activa
         echo "  Usando IP de prueba: $TEST_IP"
     fi
 else
     echo "✗ No se puede leer el archivo de estado"
-    TEST_IP="127.0.0.1"
+    TEST_IP="181.91.85.248"  # IP conocida de la conexión activa
 fi
 echo ""
 
