@@ -106,7 +106,10 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
       
       if (response.ok) {
         const data = await response.json();
+        console.log(`[VPN Utils] Verificación para IP ${clientIp}:`, data);
         return data.isActive === true;
+      } else {
+        console.error(`[VPN Utils] Error en respuesta: ${response.status} ${response.statusText}`);
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);

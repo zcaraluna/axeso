@@ -40,14 +40,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
       }
       
-      // Buscar conexión activa para esta IP pública (últimos 2 minutos)
-      // Si la conexión tiene más de 2 minutos sin actualizarse, se considera inactiva
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      // Buscar conexión activa para esta IP pública (últimos 30 minutos)
+      // Si la conexión tiene más de 30 minutos sin actualizarse, se considera inactiva
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
       const activeConnection = await prisma.vpnConnection.findFirst({
         where: {
           realIpAddress: realIp,
           connectedAt: {
-            gte: twoMinutesAgo
+            gte: thirtyMinutesAgo
           },
           disconnectedAt: null
         },
@@ -64,8 +64,19 @@ export async function GET(request: NextRequest) {
         }
       });
       
+      const isActive = activeConnection !== null && activeConnection.certificate.status === 'active';
+      
+      // Log para debugging
+      console.log(`[VPN Check] IP: ${realIp}, Found: ${activeConnection !== null}, Certificate Status: ${activeConnection?.certificate.status || 'N/A'}, IsActive: ${isActive}`);
+      
       return NextResponse.json({ 
-        isActive: activeConnection !== null && activeConnection.certificate.status === 'active'
+        isActive,
+        debug: {
+          realIp,
+          foundConnection: activeConnection !== null,
+          certificateStatus: activeConnection?.certificate.status || null,
+          connectedAt: activeConnection?.connectedAt?.toISOString() || null
+        }
       });
     }
     
