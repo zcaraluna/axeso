@@ -185,25 +185,12 @@ fi
 cat >> "$OVPN_FILE" <<EOF
 # Configuración de cifrado (compatible con OpenVPN 2.5+)
 cipher AES-256-CBC
-data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC
 auth SHA256
 # Deshabilitar DCO en Windows (causa problemas)
 disable-dco
-# Compresión (usar 'compress' en lugar de 'comp-lzo' para mejor estabilidad)
-# NOTA: Debe coincidir con la configuración del servidor
-compress lzo
-# Keepalive para mantener la conexión activa (evita desconexiones)
-# ping 10: ping cada 10 segundos
-# ping-restart 120: reiniciar si no hay respuesta en 120 segundos
-ping 10
-ping-restart 120
-# Configuración de DNS (el servidor también puede empujar esto)
-# dhcp-option DNS 8.8.8.8
-# dhcp-option DNS 8.8.4.4
-# Enrutar todo el tráfico a través de VPN (requiere permisos de administrador)
-# NOTA: El servidor puede empujar 'redirect-gateway', si hay problemas de conectividad
-# puedes descomentar la siguiente línea para forzar solo la ruta al servidor
-# route $SERVER_IP 255.255.255.255
+# Comprimir datos
+# NOTA: Comentado por defecto - descomentar solo si el servidor también tiene compresión
+# compress lzo
 # Logging
 verb 3
 mute 20
