@@ -189,12 +189,20 @@ data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC
 auth SHA256
 # Deshabilitar DCO en Windows (causa problemas)
 disable-dco
-# Comprimir datos
-comp-lzo
+# Compresión (usar 'compress' en lugar de 'comp-lzo' para mejor estabilidad)
+# NOTA: Debe coincidir con la configuración del servidor
+compress lzo
+# Keepalive para mantener la conexión activa (evita desconexiones)
+# ping 10: ping cada 10 segundos
+# ping-restart 120: reiniciar si no hay respuesta en 120 segundos
+ping 10
+ping-restart 120
+# Configuración de DNS (el servidor también puede empujar esto)
+# dhcp-option DNS 8.8.8.8
+# dhcp-option DNS 8.8.4.4
 # Enrutar todo el tráfico a través de VPN (requiere permisos de administrador)
-# Si redirect-gateway no funciona, puedes descomentar la línea siguiente para enrutar solo el servidor
-# NOTA: La ruta específica puede causar problemas de conectividad a internet
-# redirect-gateway def1
+# NOTA: El servidor puede empujar 'redirect-gateway', si hay problemas de conectividad
+# puedes descomentar la siguiente línea para forzar solo la ruta al servidor
 # route $SERVER_IP 255.255.255.255
 # Logging
 verb 3
