@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,88 +8,83 @@ datasource db {
 }
 
 model User {
-  id                    String   @id @default(cuid())
-  username              String   @unique
-  password              String
-  nombres               String   @default("")
-  apellidos             String   @default("")
-  cedula                String?  @unique
-  credencial            String   @default("")
-  telefono              String   @default("")
-  grado                 String   @default("FUNCIONARIO/A")
-  role                  String   @default("user") // "user" o "admin"
-  mustChangePassword    Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  visits Visit[]
-  vpnCertificates VpnCertificate[]
+  id                 String           @id @default(cuid())
+  username           String           @unique
+  password           String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  apellidos          String           @default("")
+  cedula             String?          @unique
+  credencial         String           @default("")
+  grado              String           @default("FUNCIONARIO/A")
+  nombres            String           @default("")
+  role               String           @default("user")
+  telefono           String           @default("")
+  mustChangePassword Boolean          @default(true)
+  visits             Visit[]
+  vpnCertificates    VpnCertificate[]
 
   @@map("users")
 }
 
 model Visit {
-  id                  String    @id @default(cuid())
-  nombres             String
-  apellidos           String
-  cedula              String
-  tipoDocumento       String
-  telefono            String
-  entryDate           String
-  entryTime           String
-  motivoCategoria     String
-  motivoDescripcion   String
-  photo               String?
-  exitDate            String?
-  exitTime            String?
-  registeredBy        String
-  exitRegisteredBy    String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  nombres           String
+  apellidos         String
+  cedula            String
+  telefono          String
+  entryDate         String
+  entryTime         String
+  motivoCategoria   String
+  motivoDescripcion String
+  photo             String?
+  exitDate          String?
+  exitTime          String?
+  registeredBy      String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  userId            String
+  exitRegisteredBy  String?
+  tipoDocumento     String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("visits")
 }
 
 model VpnCertificate {
-  id              String   @id @default(cuid())
-  userId          String?  // Opcional: puede ser asignado a un usuario específico o a una computadora
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  certificateName String   @unique // Nombre del certificado (ej: computadora-recepcion-01)
-  deviceName      String   // Nombre de la computadora/dispositivo (ej: "Recepción - PC 01")
-  location        String?  // Ubicación física (ej: "Recepción Principal", "Oficina 2")
-  commonName      String   // CN del certificado
-  status          String   @default("active") // "active", "revoked", "expired"
-  hasPassword     Boolean  @default(false) // Indica si el certificado tiene contraseña
-  passwordHash    String?  // Hash de la contraseña del certificado (bcrypt)
-  issuedAt        DateTime @default(now())
+  id              String          @id @default(cuid())
+  userId          String?
+  certificateName String          @unique
+  deviceName      String
+  location        String?
+  commonName      String
+  status          String          @default("active")
+  issuedAt        DateTime        @default(now())
   expiresAt       DateTime
   revokedAt       DateTime?
   revokedBy       String?
   lastUsedAt      DateTime?
-  ipAddress       String?  // Última IP desde la que se conectó
-  notes           String?  // Notas adicionales (ej: "Computadora de recepción principal")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
+  ipAddress       String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  user            User?           @relation(fields: [userId], references: [id])
   connections     VpnConnection[]
 
   @@map("vpn_certificates")
 }
 
 model VpnConnection {
-  id              String   @id @default(cuid())
-  certificateId   String
-  certificate     VpnCertificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
-  ipAddress       String   // IP asignada por OpenVPN
-  realIpAddress   String?  // IP real del cliente (si está disponible)
-  connectedAt     DateTime @default(now())
-  disconnectedAt  DateTime?
-  bytesReceived   BigInt   @default(0)
-  bytesSent       BigInt   @default(0)
-  duration        Int?     // Duración en segundos
+  id             String         @id @default(cuid())
+  certificateId  String
+  ipAddress      String
+  realIpAddress  String?
+  connectedAt    DateTime       @default(now())
+  disconnectedAt DateTime?
+  bytesReceived  BigInt         @default(0)
+  bytesSent      BigInt         @default(0)
+  duration       Int?
+  certificate    VpnCertificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 
   @@map("vpn_connections")
 }
