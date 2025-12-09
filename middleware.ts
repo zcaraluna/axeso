@@ -38,6 +38,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/vpn-setup') ||
       pathname.startsWith('/_next/') ||
       pathname.startsWith('/api/vpn/connections') || // Para registrar conexiones desde OpenVPN
+      pathname.startsWith('/api/vpn/check-status') || // Para verificar estado VPN desde archivo
       pathname.startsWith('/api/debug-ip'); // Para debugging
 
     if (isPublicPath) {

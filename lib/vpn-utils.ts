@@ -66,38 +66,17 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
     return true;
   }
   
-  // Si no está en el rango VPN, verificar si hay una conexión activa registrada
-  // para esta IP pública (útil cuando redirect-gateway no funciona)
-  // Esto requiere acceso a la base de datos, que se hace a través de un endpoint interno
+  // Si no está en el rango VPN, verificar usando el archivo de estado de OpenVPN
+  // Esto es más confiable que depender de hooks que pueden fallar
   try {
-    const apiToken = process.env.VPN_API_TOKEN;
-    
-    if (!apiToken) {
-      // Si no hay token configurado, solo verificar por IP
-      return false;
-    }
-    
-    // Usar URL absoluta con localhost para evitar problemas de DNS
-    // El endpoint /api/vpn/connections está en la lista de rutas públicas del middleware
     const apiUrl = process.env.VPN_API_URL || 'http://127.0.0.1:3000';
-    const checkUrl = `${apiUrl}/api/vpn/connections?check=true&realIp=${encodeURIComponent(clientIp)}`;
+    const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}`;
     
-    // Crear un nuevo Request para evitar problemas con el request original
-    const checkRequest = new Request(checkUrl, {
-      method: 'GET',
-      headers: {
-        'X-API-Token': apiToken,
-        'Host': new URL(apiUrl).host,
-      },
-    });
-    
-    // Hacer llamada a la API para verificar conexión activa
-    // Usar fetch con timeout manual porque AbortSignal.timeout puede no estar disponible
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const timeoutId = setTimeout(() => controller.abort(), 1000);
     
     try {
-      const response = await fetch(checkRequest, {
+      const response = await fetch(checkUrl, {
         signal: controller.signal,
         cache: 'no-store',
       });
@@ -108,18 +87,47 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
         const data = await response.json();
         console.log(`[VPN Utils] Verificación para IP ${clientIp}:`, data);
         return data.isActive === true;
-      } else {
-        console.error(`[VPN Utils] Error en respuesta: ${response.status} ${response.statusText}`);
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      // Si es un error de abort (timeout), no loguear como error
+      // Si es timeout, no es crítico
       if (fetchError instanceof Error && fetchError.name !== 'AbortError') {
-        throw fetchError;
+        console.error('[VPN Utils] Error verificando estado:', fetchError.message);
+      }
+    }
+    
+    // Fallback: intentar verificar en BD si el archivo de estado no funciona
+    const apiToken = process.env.VPN_API_TOKEN;
+    if (apiToken) {
+      const checkUrlDb = `${apiUrl}/api/vpn/connections?check=true&realIp=${encodeURIComponent(clientIp)}`;
+      const checkRequest = new Request(checkUrlDb, {
+        method: 'GET',
+        headers: {
+          'x-api-token': apiToken,
+          'Host': new URL(apiUrl).host,
+        },
+      });
+      
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), 1000);
+      
+      try {
+        const response = await fetch(checkRequest, {
+          signal: controller2.signal,
+          cache: 'no-store',
+        });
+        
+        clearTimeout(timeoutId2);
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.isActive === true;
+        }
+      } catch {
+        clearTimeout(timeoutId2);
       }
     }
   } catch (error) {
-    // Si hay error, solo loguear y continuar con verificación por IP
     console.error('[VPN Utils] Error verificando conexión activa:', error);
   }
   
