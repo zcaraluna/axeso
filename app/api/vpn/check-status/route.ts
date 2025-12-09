@@ -37,12 +37,15 @@ export async function GET(request: NextRequest) {
       // Common Name,Real Address,Virtual Address,Bytes Received,Bytes Sent,Connected Since
       // <client data>
       // ROUTING TABLE
+      // Virtual Address,Common Name,Real Address,Last Ref
       // ...
       const lines = content.split('\n');
       let found = false;
       let connectionInfo = null;
       let inClientList = false;
+      let inRoutingTable = false;
       let fileUpdatedAt: Date | null = null;
+      let routingTableLastRef: Date | null = null;
       
       // Primero, obtener la fecha de actualización del archivo
       for (const line of lines) {
@@ -52,7 +55,6 @@ export async function GET(request: NextRequest) {
             try {
               fileUpdatedAt = new Date(updateTimeStr);
             } catch {
-              // Si no se puede parsear, usar la fecha actual
               fileUpdatedAt = new Date();
             }
           }
@@ -60,70 +62,106 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // Si no encontramos la fecha de actualización, usar la fecha actual
       if (!fileUpdatedAt) {
         fileUpdatedAt = new Date();
       }
       
+      // Buscar en CLIENT LIST y también obtener Last Ref de ROUTING TABLE
       for (const line of lines) {
         const trimmedLine = line.trim();
         
         // Detectar inicio de sección CLIENT LIST
         if (trimmedLine === 'OpenVPN CLIENT LIST' || trimmedLine === 'CLIENT LIST') {
           inClientList = true;
+          inRoutingTable = false;
           continue;
         }
         
-        // Detectar fin de sección CLIENT LIST (inicio de otras secciones)
-        if (trimmedLine === 'ROUTING TABLE' || trimmedLine === 'GLOBAL STATS' || trimmedLine === 'END') {
+        // Detectar inicio de ROUTING TABLE
+        if (trimmedLine === 'ROUTING TABLE') {
           inClientList = false;
+          inRoutingTable = true;
           continue;
         }
         
-        // Solo procesar líneas dentro de CLIENT LIST
+        // Detectar fin de secciones
+        if (trimmedLine === 'GLOBAL STATS' || trimmedLine === 'END') {
+          inClientList = false;
+          inRoutingTable = false;
+          continue;
+        }
+        
+        // Buscar en CLIENT LIST
         if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,')) {
           const parts = trimmedLine.split(',');
           if (parts.length >= 2) {
             const realAddress = parts[1].trim();
-            // Verificar que tiene formato IP:PUERTO
             if (realAddress.includes(':')) {
               const ipFromAddress = realAddress.split(':')[0];
               
-              // Verificar que es una IP válida (formato IPv4)
               if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
-                // Verificar si la conexión tiene "Connected Since" (última actividad)
                 const connectedSinceStr = parts[5]?.trim();
-                let isRecent = true;
                 
-                if (connectedSinceStr) {
-                  try {
-                    const connectedSince = new Date(connectedSinceStr);
-                    const timeSinceConnection = Date.now() - connectedSince.getTime();
-                    // Si la conexión no ha tenido actividad en los últimos 5 minutos, considerarla inactiva
-                    // Esto ayuda a detectar conexiones "zombie" que OpenVPN no eliminó
-                    if (timeSinceConnection > 5 * 60 * 1000) {
-                      // Verificar también cuándo se actualizó el archivo por última vez
-                      const timeSinceFileUpdate = Date.now() - fileUpdatedAt.getTime();
-                      // Si el archivo se actualizó recientemente pero la conexión es antigua, probablemente está desconectada
-                      if (timeSinceFileUpdate < 60 * 1000 && timeSinceConnection > 2 * 60 * 1000) {
-                        isRecent = false;
+                // Verificar también en ROUTING TABLE para obtener Last Ref
+                for (const routingLine of lines) {
+                  const routingTrimmed = routingLine.trim();
+                  if (routingTrimmed.startsWith('ROUTING TABLE')) {
+                    inRoutingTable = true;
+                    continue;
+                  }
+                  if (inRoutingTable && routingTrimmed && !routingTrimmed.startsWith('Virtual Address,') && routingTrimmed.includes(realIp)) {
+                    const routingParts = routingTrimmed.split(',');
+                    if (routingParts.length >= 4) {
+                      const lastRefStr = routingParts[3]?.trim();
+                      if (lastRefStr) {
+                        try {
+                          routingTableLastRef = new Date(lastRefStr);
+                        } catch {
+                          // Ignorar si no se puede parsear
+                        }
                       }
                     }
-                  } catch {
-                    // Si no se puede parsear la fecha, asumir que es reciente
+                    break;
                   }
                 }
                 
-                if (isRecent) {
+                // Verificar si la conexión está realmente activa
+                // Si el archivo se actualizó recientemente pero Last Ref es antiguo, está desconectada
+                const now = Date.now();
+                const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
+                let isActive = true;
+                
+                if (routingTableLastRef) {
+                  const timeSinceLastRef = now - routingTableLastRef.getTime();
+                  // Si el archivo se actualizó en los últimos 30 segundos pero Last Ref tiene más de 1 minuto, está desconectada
+                  if (timeSinceFileUpdate < 30 * 1000 && timeSinceLastRef > 60 * 1000) {
+                    isActive = false;
+                  }
+                } else if (connectedSinceStr) {
+                  // Si no hay Last Ref, usar Connected Since
+                  try {
+                    const connectedSince = new Date(connectedSinceStr);
+                    const timeSinceConnection = now - connectedSince.getTime();
+                    // Si el archivo se actualizó recientemente pero la conexión es antigua, está desconectada
+                    if (timeSinceFileUpdate < 30 * 1000 && timeSinceConnection > 90 * 1000) {
+                      isActive = false;
+                    }
+                  } catch {
+                    // Si no se puede parsear, asumir activa
+                  }
+                }
+                
+                if (isActive) {
                   found = true;
                   connectionInfo = {
                     commonName: parts[0]?.trim() || '',
                     realAddress: realAddress,
                     virtualAddress: parts[2]?.trim() || '',
-                    connectedSince: connectedSinceStr || ''
+                    connectedSince: connectedSinceStr || '',
+                    lastRef: routingTableLastRef?.toISOString() || null
                   };
-                  break;
                 }
+                break;
               }
             }
           }
