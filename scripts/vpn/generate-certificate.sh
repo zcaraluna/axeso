@@ -38,9 +38,80 @@ if [ -f "$KEYS_DIR/issued/$CERT_NAME.crt" ]; then
     exit 1
 fi
 
-# Generar certificado
-echo "Generando certificado para $CERT_NAME..."
-./easyrsa --batch build-client-full "$CERT_NAME" nopass
+# Verificar si se proporciona contraseña desde variable de entorno (para uso no interactivo)
+PASSWORD=""
+PASSWORD_FILE=""
+
+if [ -n "$CERT_PASSWORD" ]; then
+    # Contraseña proporcionada desde variable de entorno (uso no interactivo)
+    USE_PASSWORD="y"
+    PASSWORD="$CERT_PASSWORD"
+    
+    # Verificar longitud mínima
+    if [ ${#PASSWORD} -lt 8 ]; then
+        echo "Error: La contraseña debe tener al menos 8 caracteres"
+        exit 1
+    fi
+    echo "Usando contraseña desde variable de entorno CERT_PASSWORD"
+elif [ -t 0 ]; then
+    # Solo preguntar si hay terminal interactivo
+    echo ""
+    echo "¿Deseas agregar una contraseña al certificado? (s/n)"
+    echo "NOTA: La contraseña protege el certificado si se copia a otra computadora"
+    read -r USE_PASSWORD
+    
+    if [ "$USE_PASSWORD" = "s" ] || [ "$USE_PASSWORD" = "S" ] || [ "$USE_PASSWORD" = "y" ] || [ "$USE_PASSWORD" = "Y" ]; then
+        # Pedir contraseña
+        echo "Ingresa la contraseña para el certificado (mínimo 8 caracteres):"
+        read -s PASSWORD
+        echo ""
+        
+        # Verificar longitud mínima
+        if [ ${#PASSWORD} -lt 8 ]; then
+            echo "Error: La contraseña debe tener al menos 8 caracteres"
+            exit 1
+        fi
+        
+        # Confirmar contraseña
+        echo "Confirma la contraseña:"
+        read -s PASSWORD_CONFIRM
+        echo ""
+        
+        if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
+            echo "Error: Las contraseñas no coinciden"
+            exit 1
+        fi
+    else
+        USE_PASSWORD="n"
+    fi
+else
+    # No hay terminal interactivo, no usar contraseña
+    USE_PASSWORD="n"
+fi
+
+if [ "$USE_PASSWORD" = "s" ] || [ "$USE_PASSWORD" = "S" ] || [ "$USE_PASSWORD" = "y" ] || [ "$USE_PASSWORD" = "Y" ]; then
+    # Crear archivo temporal con la contraseña
+    PASSWORD_FILE=$(mktemp)
+    echo "$PASSWORD" > "$PASSWORD_FILE"
+    chmod 600 "$PASSWORD_FILE"
+    
+    # Generar certificado CON contraseña
+    echo "Generando certificado para $CERT_NAME con contraseña..."
+    ./easyrsa --batch --passout=file:"$PASSWORD_FILE" build-client-full "$CERT_NAME"
+    
+    # Limpiar archivo temporal
+    rm -f "$PASSWORD_FILE"
+    
+    echo ""
+    echo "✓ Certificado generado con contraseña"
+    echo "  IMPORTANTE: Guarda esta contraseña de forma segura. Se pedirá al conectar."
+else
+    # Generar certificado SIN contraseña
+    echo "Generando certificado para $CERT_NAME sin contraseña..."
+    ./easyrsa --batch build-client-full "$CERT_NAME" nopass
+    echo ""
+    echo "✓ Certificado generado sin contraseña"
+fi
 
 # Crear directorio de configuración de cliente si no existe
 mkdir -p "$CLIENT_CONFIG_DIR"
@@ -94,6 +165,18 @@ persist-tun
 ca [inline]
 cert [inline]
 key [inline]
+EOF
+
+# Si tiene contraseña, agregar comentario informativo
+# NOTA: OpenVPN pedirá la contraseña automáticamente cuando la clave privada esté protegida
+# No necesitamos 'askpass' porque OpenVPN detecta automáticamente que la clave tiene passphrase
+if [ -n "$PASSWORD" ]; then
+    echo "# El certificado está protegido con contraseña" >> "$OVPN_FILE"
+    echo "# OpenVPN pedirá la contraseña automáticamente al conectar" >> "$OVPN_FILE"
+    echo "# IMPORTANTE: Guarda esta contraseña de forma segura" >> "$OVPN_FILE"
+fi
+
+cat >> "$OVPN_FILE" <<EOF
 # Configuración de cifrado (compatible con OpenVPN 2.5+)
 cipher AES-256-CBC
 data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC

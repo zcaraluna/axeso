@@ -50,6 +50,9 @@ export default function VpnManagement() {
   const [location, setLocation] = useState('');
   const [validityDays, setValidityDays] = useState(365);
   const [notes, setNotes] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [usePassword, setUsePassword] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -108,13 +111,26 @@ export default function VpnManagement() {
     }
 
     try {
+      // Validar contraseña si se usa
+      if (usePassword) {
+        if (password.length < 8) {
+          setError('La contraseña debe tener al menos 8 caracteres');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Las contraseñas no coinciden');
+          return;
+        }
+      }
+
       const response = await apiClient.createVpnCertificate({
         targetUserId: selectedUserId || undefined,
         certificateName,
         deviceName,
         location: location || undefined,
         validityDays,
-        notes: notes || undefined
+        notes: notes || undefined,
+        password: usePassword ? password : undefined
       });
 
       if (response.error) {
@@ -130,6 +146,9 @@ export default function VpnManagement() {
       setSelectedUserId('');
       setValidityDays(365);
       setNotes('');
+      setPassword('');
+      setConfirmPassword('');
+      setUsePassword(false);
       await loadData();
     } catch (err) {
       console.error('Error creating certificate:', err);
@@ -511,6 +530,70 @@ export default function VpnManagement() {
                   </p>
                 </div>
 
+                {/* Protección con contraseña */}
+                <div className="border-t border-slate-200 pt-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <input
+                      type="checkbox"
+                      id="usePassword"
+                      checked={usePassword}
+                      onChange={(e) => {
+                        setUsePassword(e.target.checked);
+                        if (!e.target.checked) {
+                          setPassword('');
+                          setConfirmPassword('');
+                        }
+                      }}
+                      className="w-5 h-5 text-blue-600 border-2 border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <label htmlFor="usePassword" className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Proteger certificado con contraseña
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-4 ml-7">
+                    Si se copia el certificado a otra computadora, se requerirá esta contraseña para conectarse.
+                  </p>
+
+                  {usePassword && (
+                    <div className="space-y-4 ml-7">
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Contraseña <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Mínimo 8 caracteres"
+                          minLength={8}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-slate-900"
+                          required={usePassword}
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          Mínimo 8 caracteres. Se pedirá al conectar a la VPN.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Confirmar contraseña <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repite la contraseña"
+                          minLength={8}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-slate-900"
+                          required={usePassword}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Notas */}
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
@@ -541,6 +624,9 @@ export default function VpnManagement() {
                     setSelectedUserId('');
                     setValidityDays(365);
                     setNotes('');
+                    setPassword('');
+                    setConfirmPassword('');
+                    setUsePassword(false);
                   }}
                   className="flex-1 px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all"
                 >

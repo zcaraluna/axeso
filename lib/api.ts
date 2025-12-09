@@ -123,6 +123,7 @@ class ApiClient {
     location?: string;
     validityDays?: number;
     notes?: string;
+    password?: string;
   }) {
     return this.request('/vpn/certificates', {
       method: 'POST',

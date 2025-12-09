@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { readFile } from 'fs/promises';
+
+const execAsync = promisify(exec);
 import jwt from 'jsonwebtoken';
 
 /**
@@ -106,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { targetUserId, certificateName, deviceName, location, validityDays = 365, notes } = body;
+    const { targetUserId, certificateName, deviceName, location, validityDays = 365, notes, password } = body;
 
     // Puede crear certificados para otros usuarios o sin asignar
     const finalUserId = targetUserId || null;
@@ -142,8 +148,23 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + validityDays);
 
+    // Procesar contraseña si se proporciona
+    let passwordHash: string | null = null;
+    const hasPassword = !!password && password.trim().length > 0;
+    
+    if (hasPassword) {
+      // Validar longitud mínima
+      if (password.length < 8) {
+        return NextResponse.json(
+          { error: 'La contraseña debe tener al menos 8 caracteres' },
+          { status: 400 }
+        );
+      }
+      // Hashear la contraseña
+      passwordHash = await bcrypt.hash(password, 12);
+    }
+
     // Crear certificado en la base de datos
-    // NOTA: La generación real del certificado OpenVPN se hará con scripts externos
     const certificate = await prisma.vpnCertificate.create({
       data: {
         userId: finalUserId || null,
@@ -153,7 +174,9 @@ export async function POST(request: NextRequest) {
         commonName: certificateName,
         expiresAt,
         notes: notes || null,
-        status: 'active'
+        status: 'active',
+        hasPassword,
+        passwordHash
       },
       include: {
         user: {
@@ -167,10 +190,58 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
-      certificate,
-      message: 'Certificado creado. Debe generarse el archivo .ovpn usando el script de generación.'
-    }, { status: 201 });
+    // Generar el certificado OpenVPN automáticamente
+    try {
+      const scriptPath = '/home/cyberpol/web/visitantes.cyberpol.com.py/public_html/scripts/vpn/generate-certificate.sh';
+      const validityDaysCalc = Math.ceil((expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Preparar comando con contraseña si existe
+      let command = `sudo bash ${scriptPath} ${certificateName} "" ${validityDaysCalc}`;
+      const env: Record<string, string> = { ...process.env };
+      
+      if (hasPassword && password) {
+        env.CERT_PASSWORD = password;
+      }
+      
+      // Ejecutar script de generación
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 60000, // 60 segundos
+        env
+      });
+
+      if (stderr && !stderr.includes('Generando certificado') && !stderr.includes('Usando contraseña')) {
+        console.error('Error generando certificado:', stderr);
+        // No fallar si el certificado ya existe o hay un warning menor
+        if (!stderr.includes('ya existe') && !stderr.includes('ADVERTENCIA')) {
+          // Eliminar el certificado de la BD si falla la generación
+          await prisma.vpnCertificate.delete({ where: { id: certificate.id } });
+          return NextResponse.json(
+            { error: 'Error al generar certificado OpenVPN', details: stderr },
+            { status: 500 }
+          );
+        }
+      }
+
+      return NextResponse.json({
+        certificate,
+        message: hasPassword 
+          ? 'Certificado creado y generado exitosamente con contraseña. El archivo .ovpn está listo para descargar.'
+          : 'Certificado creado y generado exitosamente. El archivo .ovpn está listo para descargar.'
+      }, { status: 201 });
+    } catch (execError: any) {
+      console.error('Error ejecutando script de generación:', execError);
+      // Eliminar el certificado de la BD si falla la generación
+      await prisma.vpnCertificate.delete({ where: { id: certificate.id } }).catch(() => {});
+      
+      return NextResponse.json(
+        { 
+          error: 'Error al generar certificado OpenVPN', 
+          details: execError.message,
+          note: 'El certificado fue creado en la BD pero falló la generación del archivo .ovpn. Puedes generarlo manualmente con el script.'
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error creating VPN certificate:', error);
     return NextResponse.json(
