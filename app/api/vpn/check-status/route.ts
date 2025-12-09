@@ -31,29 +31,53 @@ export async function GET(request: NextRequest) {
       const content = await readFile(statusFile, 'utf-8');
       
       // Buscar la IP en el archivo de estado
-      // Formato: Common Name,Real Address,Virtual Address,Bytes Received,Bytes Sent,Connected Since
+      // Formato del archivo:
+      // OpenVPN CLIENT LIST
+      // Updated,<timestamp>
+      // Common Name,Real Address,Virtual Address,Bytes Received,Bytes Sent,Connected Since
+      // <client data>
+      // ROUTING TABLE
+      // ...
       const lines = content.split('\n');
       let found = false;
       let connectionInfo = null;
+      let inClientList = false;
       
       for (const line of lines) {
-        // Buscar líneas de clientes (no comentarios, no headers)
-        if (line.trim() && !line.startsWith('#') && !line.startsWith('CLIENT LIST') && !line.startsWith('ROUTING TABLE') && !line.startsWith('GLOBAL STATS')) {
-          const parts = line.split(',');
+        const trimmedLine = line.trim();
+        
+        // Detectar inicio de sección CLIENT LIST
+        if (trimmedLine === 'OpenVPN CLIENT LIST' || trimmedLine === 'CLIENT LIST') {
+          inClientList = true;
+          continue;
+        }
+        
+        // Detectar fin de sección CLIENT LIST (inicio de otras secciones)
+        if (trimmedLine === 'ROUTING TABLE' || trimmedLine === 'GLOBAL STATS' || trimmedLine === 'END') {
+          inClientList = false;
+          continue;
+        }
+        
+        // Solo procesar líneas dentro de CLIENT LIST
+        if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,')) {
+          const parts = trimmedLine.split(',');
           if (parts.length >= 2) {
             const realAddress = parts[1].trim();
-            // Extraer IP de "IP:PUERTO"
-            const ipFromAddress = realAddress.split(':')[0];
-            
-            if (ipFromAddress === realIp) {
-              found = true;
-              connectionInfo = {
-                commonName: parts[0]?.trim() || '',
-                realAddress: realAddress,
-                virtualAddress: parts[2]?.trim() || '',
-                connectedSince: parts[5]?.trim() || ''
-              };
-              break;
+            // Verificar que tiene formato IP:PUERTO
+            if (realAddress.includes(':')) {
+              const ipFromAddress = realAddress.split(':')[0];
+              
+              // Verificar que es una IP válida (formato IPv4)
+              if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
+                found = true;
+                connectionInfo = {
+                  commonName: parts[0]?.trim() || '',
+                  realAddress: realAddress,
+                  virtualAddress: parts[2]?.trim() || '',
+                  connectedSince: parts[5]?.trim() || ''
+                };
+                break;
+              }
             }
           }
         }
