@@ -59,6 +59,8 @@ model VpnCertificate {
   location        String?
   commonName      String
   status          String          @default("active")
+  hasPassword     Boolean         @default(false) // Indica si el certificado tiene contraseña
+  passwordHash    String?         // Hash de la contraseña del certificado (bcrypt)
   issuedAt        DateTime        @default(now())
   expiresAt       DateTime
   revokedAt       DateTime?
