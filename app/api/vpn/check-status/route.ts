@@ -133,8 +133,10 @@ export async function GET(request: NextRequest) {
                 
                 if (routingTableLastRef) {
                   const timeSinceLastRef = now - routingTableLastRef.getTime();
-                  // Si el archivo se actualizó en los últimos 30 segundos pero Last Ref tiene más de 1 minuto, está desconectada
-                  if (timeSinceFileUpdate < 30 * 1000 && timeSinceLastRef > 60 * 1000) {
+                  // Si el archivo se actualizó recientemente pero Last Ref es antiguo, está desconectada
+                  // Reducido a 10 segundos para detección muy rápida
+                  // El archivo se actualiza cada 10 segundos (si está configurado), así que 10 segundos es suficiente
+                  if (timeSinceFileUpdate < 15 * 1000 && timeSinceLastRef > 10 * 1000) {
                     isActive = false;
                   }
                 } else if (connectedSinceStr) {
@@ -143,7 +145,8 @@ export async function GET(request: NextRequest) {
                     const connectedSince = new Date(connectedSinceStr);
                     const timeSinceConnection = now - connectedSince.getTime();
                     // Si el archivo se actualizó recientemente pero la conexión es antigua, está desconectada
-                    if (timeSinceFileUpdate < 30 * 1000 && timeSinceConnection > 90 * 1000) {
+                    // Reducido a 20 segundos para detección más rápida (fallback si no hay Last Ref)
+                    if (timeSinceFileUpdate < 15 * 1000 && timeSinceConnection > 20 * 1000) {
                       isActive = false;
                     }
                   } catch {
