@@ -156,39 +156,36 @@ export async function GET(request: NextRequest) {
       }
       
       // Determinar si la conexión está activa
-      // Estrategia: Usar Last Ref como fuente principal de verdad
-      // - Si está en CLIENT LIST Y tiene Last Ref reciente → activa
-      // - Si NO está en CLIENT LIST pero tiene Last Ref MUY reciente (≤5s) → activa temporalmente
-      //   (esto cubre el caso donde el archivo se está actualizando)
-      // - Si Last Ref es antiguo (>15s) → desconectada
+      // Estrategia: Usar Last Ref como fuente principal de verdad (más confiable)
+      // - Si tiene Last Ref reciente (≤15s) → activa (independientemente de CLIENT LIST)
+      //   Esto evita alternancia cuando el archivo se actualiza y la conexión desaparece temporalmente de CLIENT LIST
+      // - Si NO tiene Last Ref pero está en CLIENT LIST → verificar Connected Since
+      // - Si Last Ref es antiguo (>15s) Y no está en CLIENT LIST → desconectada
       const now = Date.now();
       let isActive = false;
       
       if (routingTableLastRef) {
+        // Si hay Last Ref, usarlo como fuente principal de verdad
         const timeSinceLastRef = now - routingTableLastRef.getTime();
-        
-        if (foundInClientList) {
-          // Si está en CLIENT LIST, usar umbral de 15 segundos (más margen para estabilidad)
-          isActive = timeSinceLastRef <= 15 * 1000;
-        } else {
-          // Si NO está en CLIENT LIST pero tiene Last Ref muy reciente (≤5s),
-          // puede ser que el archivo se esté actualizando
-          // Solo considerar activa si Last Ref es muy reciente
-          isActive = timeSinceLastRef <= 5 * 1000;
-        }
+        // Umbral de 15 segundos para dar estabilidad
+        // El archivo se actualiza cada 10 segundos, así que 15 segundos es seguro
+        isActive = timeSinceLastRef <= 15 * 1000;
       } else if (foundInClientList) {
-        // Si está en CLIENT LIST pero NO tiene Last Ref, verificar Connected Since
+        // Si NO hay Last Ref pero está en CLIENT LIST, verificar Connected Since
         if (connectedSinceStr) {
           try {
             const connectedSince = new Date(connectedSinceStr);
             const timeSinceConnection = now - connectedSince.getTime();
             const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
             // Solo considerar activa si la conexión es muy reciente Y el archivo se actualizó recientemente
+            // Esto cubre el caso donde la conexión es muy nueva y aún no tiene Last Ref
             isActive = timeSinceConnection <= 20 * 1000 && timeSinceFileUpdate <= 15 * 1000;
           } catch {
             isActive = false;
           }
         } else {
+          // Si está en CLIENT LIST pero no tiene Last Ref ni Connected Since,
+          // puede ser un error en el archivo, pero por seguridad asumir inactiva
           isActive = false;
         }
       }
