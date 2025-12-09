@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import { existsSync } from 'fs';
 
 /**
@@ -59,12 +59,25 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      return NextResponse.json({ 
+      // Obtener información de última actualización del archivo
+      const stats = await stat(statusFile);
+      const lastModified = stats.mtime;
+      
+      const response = NextResponse.json({ 
         isActive: found,
         realIp,
         connectionInfo,
-        checkedAt: new Date().toISOString()
+        checkedAt: new Date().toISOString(),
+        fileLastModified: lastModified.toISOString(),
+        fileAgeSeconds: Math.floor((Date.now() - lastModified.getTime()) / 1000)
       });
+      
+      // Agregar headers para evitar caché
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      
+      return response;
     } catch (readError) {
       console.error('[VPN Status] Error leyendo archivo de estado:', readError);
       return NextResponse.json({ 

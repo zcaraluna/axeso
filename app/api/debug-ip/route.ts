@@ -17,13 +17,38 @@ export async function GET(request: NextRequest) {
     'remote-addr': request.headers.get('remote-addr'),
   };
 
-  return NextResponse.json({
+  // Obtener información adicional del estado VPN
+  let vpnStatusInfo = null;
+  try {
+    const apiUrl = process.env.VPN_API_URL || 'http://127.0.0.1:3000';
+    const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}`;
+    const statusResponse = await fetch(checkUrl, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(2000),
+    });
+    if (statusResponse.ok) {
+      vpnStatusInfo = await statusResponse.json();
+    }
+  } catch (error) {
+    // Ignorar errores de timeout
+  }
+
+  const response = NextResponse.json({
     detectedIp: clientIp,
     isVpnConnected: isVpn,
     vpnRange,
     headers,
     vpnRequired: process.env.VPN_REQUIRED,
     nodeEnv: process.env.NODE_ENV,
+    vpnStatusInfo,
+    timestamp: new Date().toISOString(),
   });
+
+  // Agregar headers para evitar caché
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+
+  return response;
 }
 
