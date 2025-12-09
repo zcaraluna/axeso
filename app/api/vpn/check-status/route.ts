@@ -42,6 +42,28 @@ export async function GET(request: NextRequest) {
       let found = false;
       let connectionInfo = null;
       let inClientList = false;
+      let fileUpdatedAt: Date | null = null;
+      
+      // Primero, obtener la fecha de actualización del archivo
+      for (const line of lines) {
+        if (line.trim().startsWith('Updated,')) {
+          const updateTimeStr = line.trim().split(',')[1]?.trim();
+          if (updateTimeStr) {
+            try {
+              fileUpdatedAt = new Date(updateTimeStr);
+            } catch {
+              // Si no se puede parsear, usar la fecha actual
+              fileUpdatedAt = new Date();
+            }
+          }
+          break;
+        }
+      }
+      
+      // Si no encontramos la fecha de actualización, usar la fecha actual
+      if (!fileUpdatedAt) {
+        fileUpdatedAt = new Date();
+      }
       
       for (const line of lines) {
         const trimmedLine = line.trim();
@@ -69,14 +91,39 @@ export async function GET(request: NextRequest) {
               
               // Verificar que es una IP válida (formato IPv4)
               if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
-                found = true;
-                connectionInfo = {
-                  commonName: parts[0]?.trim() || '',
-                  realAddress: realAddress,
-                  virtualAddress: parts[2]?.trim() || '',
-                  connectedSince: parts[5]?.trim() || ''
-                };
-                break;
+                // Verificar si la conexión tiene "Connected Since" (última actividad)
+                const connectedSinceStr = parts[5]?.trim();
+                let isRecent = true;
+                
+                if (connectedSinceStr) {
+                  try {
+                    const connectedSince = new Date(connectedSinceStr);
+                    const timeSinceConnection = Date.now() - connectedSince.getTime();
+                    // Si la conexión no ha tenido actividad en los últimos 5 minutos, considerarla inactiva
+                    // Esto ayuda a detectar conexiones "zombie" que OpenVPN no eliminó
+                    if (timeSinceConnection > 5 * 60 * 1000) {
+                      // Verificar también cuándo se actualizó el archivo por última vez
+                      const timeSinceFileUpdate = Date.now() - fileUpdatedAt.getTime();
+                      // Si el archivo se actualizó recientemente pero la conexión es antigua, probablemente está desconectada
+                      if (timeSinceFileUpdate < 60 * 1000 && timeSinceConnection > 2 * 60 * 1000) {
+                        isRecent = false;
+                      }
+                    }
+                  } catch {
+                    // Si no se puede parsear la fecha, asumir que es reciente
+                  }
+                }
+                
+                if (isRecent) {
+                  found = true;
+                  connectionInfo = {
+                    commonName: parts[0]?.trim() || '',
+                    realAddress: realAddress,
+                    virtualAddress: parts[2]?.trim() || '',
+                    connectedSince: connectedSinceStr || ''
+                  };
+                  break;
+                }
               }
             }
           }
