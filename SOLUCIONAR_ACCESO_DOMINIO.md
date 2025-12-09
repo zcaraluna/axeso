@@ -61,11 +61,26 @@ Este script:
 
 #### Opción B: Si usas Hestia CP para gestionar DNS
 
-1. Accede a Hestia CP
-2. Ve a "DNS" → "DNS Domains"
-3. Verifica que existe el dominio `visitantes.cyberpol.com.py`
-4. Verifica que hay un registro A apuntando a `144.202.77.18`
-5. Si no existe, agrégalo
+**⚠️ PROBLEMA DETECTADO**: El diagnóstico muestra que NO existe un registro A para el subdominio `visitantes` en la zona DNS de `cyberpol.com.py`.
+
+**Solución:**
+
+1. Accede a Hestia CP: `https://tu-servidor:8083`
+2. Ve a **"DNS"** → **"DNS Domains"**
+3. Selecciona **"cyberpol.com.py"** (NO `visitantes.cyberpol.com.py`)
+4. Agrega un nuevo registro:
+   - **Tipo**: A
+   - **Nombre**: `visitantes` (solo el subdominio, sin el dominio completo)
+   - **Valor/IP**: `144.202.77.18`
+   - **TTL**: 3600
+5. Guarda los cambios
+
+**O desde la línea de comandos (en el servidor):**
+```bash
+/usr/local/hestia/bin/v-add-dns-record cyberpol cyberpol.com.py visitantes A 144.202.77.18
+```
+
+**Nota importante**: `visitantes.cyberpol.com.py` es un **subdominio** de `cyberpol.com.py`, por lo que el registro A debe agregarse en la zona DNS de `cyberpol.com.py`, no como un dominio separado.
 
 #### Opción C: Si usas BIND directamente
 
