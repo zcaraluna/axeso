@@ -156,46 +156,43 @@ export async function GET(request: NextRequest) {
       }
       
       // Determinar si la conexión está activa
-      // IMPORTANTE: Una conexión solo está activa si:
-      // 1. Está en CLIENT LIST (conexión establecida)
-      // 2. Y tiene Last Ref reciente (menos de 10 segundos)
-      // Si no está en CLIENT LIST, NO está activa, incluso si tiene Last Ref en ROUTING TABLE
+      // Estrategia: Usar Last Ref como fuente principal de verdad
+      // - Si está en CLIENT LIST Y tiene Last Ref reciente → activa
+      // - Si NO está en CLIENT LIST pero tiene Last Ref MUY reciente (≤5s) → activa temporalmente
+      //   (esto cubre el caso donde el archivo se está actualizando)
+      // - Si Last Ref es antiguo (>15s) → desconectada
       const now = Date.now();
       let isActive = false;
       
-      if (foundInClientList) {
-        // Solo considerar activa si está en CLIENT LIST Y tiene Last Ref reciente
-        if (routingTableLastRef) {
-          const timeSinceLastRef = now - routingTableLastRef.getTime();
-          // Si Last Ref es más antiguo que 10 segundos, la conexión está desconectada
-          // Reducido a 10 segundos para detección más rápida y precisa
-          // El archivo se actualiza cada 10 segundos, así que 10 segundos es el umbral máximo
-          isActive = timeSinceLastRef <= 10 * 1000;
+      if (routingTableLastRef) {
+        const timeSinceLastRef = now - routingTableLastRef.getTime();
+        
+        if (foundInClientList) {
+          // Si está en CLIENT LIST, usar umbral de 15 segundos (más margen para estabilidad)
+          isActive = timeSinceLastRef <= 15 * 1000;
         } else {
-          // Si está en CLIENT LIST pero NO tiene Last Ref, verificar Connected Since
-          // Esto puede pasar si la conexión es muy nueva o si hay un problema con el archivo de estado
-          if (connectedSinceStr) {
-            try {
-              const connectedSince = new Date(connectedSinceStr);
-              const timeSinceConnection = now - connectedSince.getTime();
-              // Si la conexión es muy reciente (menos de 20 segundos) y no hay Last Ref,
-              // puede ser que el archivo aún no se haya actualizado con el Last Ref
-              // Pero si es más antigua, probablemente está desconectada
-              const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
-              // Solo considerar activa si la conexión es muy reciente Y el archivo se actualizó recientemente
-              isActive = timeSinceConnection <= 20 * 1000 && timeSinceFileUpdate <= 15 * 1000;
-            } catch {
-              // Si no se puede parsear, NO asumir activa (más estricto)
-              isActive = false;
-            }
-          } else {
-            // Si no hay Last Ref ni Connected Since, NO asumir activa
+          // Si NO está en CLIENT LIST pero tiene Last Ref muy reciente (≤5s),
+          // puede ser que el archivo se esté actualizando
+          // Solo considerar activa si Last Ref es muy reciente
+          isActive = timeSinceLastRef <= 5 * 1000;
+        }
+      } else if (foundInClientList) {
+        // Si está en CLIENT LIST pero NO tiene Last Ref, verificar Connected Since
+        if (connectedSinceStr) {
+          try {
+            const connectedSince = new Date(connectedSinceStr);
+            const timeSinceConnection = now - connectedSince.getTime();
+            const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
+            // Solo considerar activa si la conexión es muy reciente Y el archivo se actualizó recientemente
+            isActive = timeSinceConnection <= 20 * 1000 && timeSinceFileUpdate <= 15 * 1000;
+          } catch {
             isActive = false;
           }
+        } else {
+          isActive = false;
         }
       }
-      // Si NO está en CLIENT LIST, definitivamente NO está activa
-      // (no importa si tiene Last Ref en ROUTING TABLE - es una conexión "zombie")
+      // Si NO está en CLIENT LIST y NO tiene Last Ref, definitivamente NO está activa
       
       // Si la conexión está activa, establecer found y connectionInfo
       if (isActive) {
