@@ -41,7 +41,11 @@ export async function POST(
     let passwordFile: string | null = null;
     let password: string | null = null;
 
-    if (certificate.hasPassword && certificate.passwordHash) {
+    // Verificar si tiene contraseña (usar type assertion temporal hasta que Prisma se regenere)
+    const hasPassword = (certificate as any).hasPassword === true;
+    const passwordHash = (certificate as any).passwordHash;
+
+    if (hasPassword && passwordHash) {
       // Si tiene contraseña, necesitamos que el usuario la proporcione
       // Por ahora, generamos sin contraseña y el usuario debe usar el script manualmente
       // TODO: Implementar endpoint para verificar contraseña y generar con ella
