@@ -140,11 +140,17 @@ if [ -z "$SERVER_IP" ]; then
 else
     # Verificar que la IP detectada sea la correcta
     if [ "$SERVER_IP" != "$DEFAULT_SERVER_IP" ]; then
-        echo "ADVERTENCIA: IP detectada ($SERVER_IP) difiere de la IP por defecto ($DEFAULT_SERVER_IP)"
-        echo "¿Usar IP detectada ($SERVER_IP) o IP por defecto ($DEFAULT_SERVER_IP)? [d]efault/[d]etected: "
-        read -r choice
-        if [ "$choice" != "d" ] && [ "$choice" != "D" ]; then
+        # Si no hay terminal interactivo, usar la IP por defecto automáticamente
+        if [ ! -t 0 ]; then
             SERVER_IP="$DEFAULT_SERVER_IP"
+            echo "Usando IP por defecto (modo no interactivo): $SERVER_IP"
+        else
+            echo "ADVERTENCIA: IP detectada ($SERVER_IP) difiere de la IP por defecto ($DEFAULT_SERVER_IP)"
+            echo "¿Usar IP detectada ($SERVER_IP) o IP por defecto ($DEFAULT_SERVER_IP)? [d]efault/[d]etected: "
+            read -r choice
+            if [ "$choice" != "d" ] && [ "$choice" != "D" ]; then
+                SERVER_IP="$DEFAULT_SERVER_IP"
+            fi
         fi
     fi
 fi

@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       
       // Preparar comando con contraseña si existe
       let command = `sudo bash ${scriptPath} ${certificateName} "" ${validityDaysCalc}`;
-      const env: Record<string, string> = { ...process.env };
+      const env = { ...process.env } as NodeJS.ProcessEnv;
       
       if (hasPassword && password) {
         env.CERT_PASSWORD = password;
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
       // Ejecutar script de generación
       const { stdout, stderr } = await execAsync(command, {
         timeout: 60000, // 60 segundos
-        env
+        env: env as NodeJS.ProcessEnv
       });
 
       if (stderr && !stderr.includes('Generando certificado') && !stderr.includes('Usando contraseña')) {
