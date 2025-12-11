@@ -222,3 +222,4 @@ echo "4. Probar acceso por IP:"
 echo "   curl -k -H 'Host: $DOMAIN' https://$IP/"
 echo ""
 
+

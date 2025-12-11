@@ -129,3 +129,4 @@ echo "  → Solución temporal: agregar al archivo hosts de Windows"
 echo "  → Solución permanente: configurar DNS correctamente en el proveedor"
 echo ""
 
+

@@ -104,3 +104,4 @@ echo "  Si tienes certificados antiguos con 'comp-lzo', deberían seguir funcion
 echo "  pero es recomendable regenerarlos con el script actualizado para mejor estabilidad."
 echo ""
 
+

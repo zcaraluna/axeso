@@ -96,3 +96,4 @@ echo "  2. Verificar que el firewall del servidor permita NAT"
 echo "  3. Verificar que IP forwarding esté habilitado: cat /proc/sys/net/ipv4/ip_forward"
 echo ""
 
+
