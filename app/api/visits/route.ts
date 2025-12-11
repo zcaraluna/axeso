@@ -66,11 +66,21 @@ export async function POST(request: NextRequest) {
 
     const registeredBy = `${user.nombres} ${user.apellidos}`.trim()
 
-    // Obtener fecha de hoy
-    const now = new Date()
-    const day = String(now.getDate()).padStart(2, '0')
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const year = String(now.getFullYear()).slice(-2) // Últimos 2 dígitos del año
+    // Usar entryDate del body para generar el ID (formato: DD/MM/YYYY)
+    // Esto asegura que el ID se base en la fecha de entrada real, no en la fecha del servidor
+    if (!entryDate) {
+      return NextResponse.json({ error: 'Entry date is required' }, { status: 400 })
+    }
+
+    // Parsear entryDate (formato: DD/MM/YYYY)
+    const dateParts = entryDate.split('/')
+    if (dateParts.length !== 3) {
+      return NextResponse.json({ error: 'Invalid entry date format. Expected DD/MM/YYYY' }, { status: 400 })
+    }
+
+    const day = dateParts[0].padStart(2, '0')
+    const month = dateParts[1].padStart(2, '0')
+    const year = dateParts[2].slice(-2) // Últimos 2 dígitos del año
     const prefix = `ASU${day}${month}${year}-`
 
     // Intentar crear la visita con reintentos en caso de conflicto de ID
