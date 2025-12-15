@@ -13,7 +13,8 @@ export async function middleware(request: NextRequest) {
   // IMPORTANTE: Este log debe aparecer SIEMPRE, incluso si hay errores
   try {
     const pathname = request.nextUrl.pathname;
-    console.log(`[VPN Middleware] INICIO - Path: ${pathname}`);
+    const hostname = request.headers.get('host') || request.nextUrl.hostname;
+    console.log(`[VPN Middleware] INICIO - Host: ${hostname}, Path: ${pathname}`);
     
     // Verificar si la verificación VPN está habilitada
     // En Edge Runtime, las variables de entorno pueden no estar disponibles
@@ -28,6 +29,24 @@ export async function middleware(request: NextRequest) {
       // Si no está habilitado, permitir todo el tráfico
       console.log(`[VPN Middleware] VPN no requerido (env=${vpnRequiredEnv}), permitiendo acceso`);
       return NextResponse.next();
+    }
+
+    // Verificar si este dominio/subdominio requiere VPN
+    // Si VPN_REQUIRED_DOMAINS está configurado, solo aplicar VPN a esos dominios
+    const vpnRequiredDomains = process.env.VPN_REQUIRED_DOMAINS;
+    if (vpnRequiredDomains) {
+      const allowedDomains = vpnRequiredDomains.split(',').map(d => d.trim().toLowerCase());
+      const currentHost = hostname.toLowerCase();
+      const requiresVpn = allowedDomains.some(domain => 
+        currentHost === domain || currentHost.endsWith('.' + domain)
+      );
+      
+      if (!requiresVpn) {
+        console.log(`[VPN Middleware] Dominio ${hostname} no requiere VPN (no está en VPN_REQUIRED_DOMAINS), permitiendo acceso`);
+        return NextResponse.next();
+      }
+      
+      console.log(`[VPN Middleware] Dominio ${hostname} requiere VPN`);
     }
 
     // Rutas que no requieren VPN
