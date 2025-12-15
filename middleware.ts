@@ -36,17 +36,51 @@ export async function middleware(request: NextRequest) {
     const vpnRequiredDomains = process.env.VPN_REQUIRED_DOMAINS;
     if (vpnRequiredDomains) {
       const allowedDomains = vpnRequiredDomains.split(',').map(d => d.trim().toLowerCase());
-      const currentHost = hostname.toLowerCase();
+      let currentHost = hostname.toLowerCase();
+      
+      // Si es localhost, IP, o puerto, usar NEXT_PUBLIC_SITE_URL para obtener el dominio real
+      const isLocalhostOrIp = currentHost.startsWith('localhost') || 
+                              currentHost.startsWith('127.0.0.1') || 
+                              currentHost === 'localhost' ||
+                              currentHost.includes(':') && (currentHost.startsWith('localhost') || currentHost.startsWith('127.0.0.1') || /^\d+\.\d+\.\d+\.\d+/.test(currentHost));
+      
+      if (isLocalhostOrIp) {
+        // Usar NEXT_PUBLIC_SITE_URL para determinar el dominio real cuando nginx no pasa el Host correctamente
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_URL_BASE;
+        if (siteUrl) {
+          try {
+            const url = new URL(siteUrl);
+            currentHost = url.hostname.toLowerCase();
+            console.log(`[VPN Middleware] Hostname detectado como ${hostname}, usando dominio ${currentHost} desde NEXT_PUBLIC_SITE_URL`);
+          } catch (e) {
+            console.error(`[VPN Middleware] Error parseando NEXT_PUBLIC_SITE_URL: ${siteUrl}`, e);
+            // Si no se puede parsear, permitir acceso en desarrollo
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[VPN Middleware] Modo desarrollo - permitiendo acceso desde localhost`);
+              return NextResponse.next();
+            }
+          }
+        } else if (process.env.NODE_ENV === 'development') {
+          // En desarrollo sin NEXT_PUBLIC_SITE_URL, permitir acceso
+          console.log(`[VPN Middleware] Modo desarrollo - permitiendo acceso desde localhost`);
+          return NextResponse.next();
+        } else {
+          // En producción con localhost pero sin NEXT_PUBLIC_SITE_URL, aplicar VPN por seguridad
+          console.log(`[VPN Middleware] Acceso por localhost/IP en producción sin NEXT_PUBLIC_SITE_URL - aplicando VPN`);
+        }
+      }
+      
+      // Verificar si el dominio actual requiere VPN
       const requiresVpn = allowedDomains.some(domain => 
         currentHost === domain || currentHost.endsWith('.' + domain)
       );
       
       if (!requiresVpn) {
-        console.log(`[VPN Middleware] Dominio ${hostname} no requiere VPN (no está en VPN_REQUIRED_DOMAINS), permitiendo acceso`);
+        console.log(`[VPN Middleware] Dominio ${currentHost} no requiere VPN (no está en VPN_REQUIRED_DOMAINS), permitiendo acceso`);
         return NextResponse.next();
       }
       
-      console.log(`[VPN Middleware] Dominio ${hostname} requiere VPN`);
+      console.log(`[VPN Middleware] Dominio ${currentHost} requiere VPN`);
     }
 
     // Rutas que no requieren VPN
