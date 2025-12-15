@@ -9,12 +9,52 @@ export async function GET(request: NextRequest) {
   const clientIp = getClientIp(request);
   const isVpn = await isVpnConnected(request);
   const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
+  const vpnRequiredEnv = process.env.VPN_REQUIRED;
+  const vpnRequired = vpnRequiredEnv === 'true';
+
+  // Obtener el hostname actual
+  const hostname = request.headers.get('host') || request.nextUrl.hostname;
+  let currentHost = hostname.toLowerCase();
+  
+  // Si es localhost o IP, usar NEXT_PUBLIC_SITE_URL para obtener el dominio real
+  const isLocalhostOrIp = currentHost.startsWith('localhost') || 
+                          currentHost.startsWith('127.0.0.1') || 
+                          currentHost === 'localhost' ||
+                          (currentHost.includes(':') && (currentHost.startsWith('localhost') || currentHost.startsWith('127.0.0.1') || /^\d+\.\d+\.\d+\.\d+/.test(currentHost)));
+  
+  if (isLocalhostOrIp) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_URL_BASE;
+    if (siteUrl) {
+      try {
+        const url = new URL(siteUrl);
+        currentHost = url.hostname.toLowerCase();
+      } catch (e) {
+        // Si no se puede parsear, usar el hostname original
+      }
+    }
+  }
+
+  // Verificar si este dominio específico requiere VPN
+  let domainRequiresVpn = false;
+  if (vpnRequired) {
+    const vpnRequiredDomains = process.env.VPN_REQUIRED_DOMAINS;
+    if (vpnRequiredDomains) {
+      const allowedDomains = vpnRequiredDomains.split(',').map(d => d.trim().toLowerCase());
+      domainRequiresVpn = allowedDomains.some(domain => 
+        currentHost === domain || currentHost.endsWith('.' + domain)
+      );
+    } else {
+      // Si VPN_REQUIRED=true pero no hay VPN_REQUIRED_DOMAINS, todos los dominios requieren VPN
+      domainRequiresVpn = true;
+    }
+  }
 
   const headers = {
     'x-real-ip': request.headers.get('x-real-ip'),
     'x-forwarded-for': request.headers.get('x-forwarded-for'),
     'cf-connecting-ip': request.headers.get('cf-connecting-ip'),
     'remote-addr': request.headers.get('remote-addr'),
+    'host': hostname,
   };
 
   // Obtener información adicional del estado VPN
@@ -38,7 +78,11 @@ export async function GET(request: NextRequest) {
     isVpnConnected: isVpn,
     vpnRange,
     headers,
-    vpnRequired: process.env.VPN_REQUIRED,
+    vpnRequired: vpnRequiredEnv,
+    vpnRequiredParsed: vpnRequired,
+    domainRequiresVpn: domainRequiresVpn,
+    currentHost: currentHost,
+    originalHostname: hostname,
     nodeEnv: process.env.NODE_ENV,
     vpnStatusInfo,
     timestamp: new Date().toISOString(),
