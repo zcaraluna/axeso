@@ -107,6 +107,13 @@ class ApiClient {
     });
   }
 
+  async toggleUserStatus(userId: string, isActive: boolean) {
+    return this.request(`/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    });
+  }
+
   // VPN API
   async getVpnCertificates() {
     return this.request('/vpn/certificates');

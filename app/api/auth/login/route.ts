@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
+    // Verificar si el usuario está activo
+    if (!user.isActive) {
+      return NextResponse.json({ error: 'Tu cuenta ha sido deshabilitada. Contacta al administrador.' }, { status: 403 })
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
@@ -40,7 +45,8 @@ export async function POST(request: NextRequest) {
         nombres: user.nombres,
         apellidos: user.apellidos,
         role: user.role,
-        mustChangePassword: user.mustChangePassword
+        mustChangePassword: user.mustChangePassword,
+        isActive: user.isActive
       }
     })
   } catch (error) {

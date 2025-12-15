@@ -15,6 +15,7 @@ async function main() {
       password: hashedGarvPassword,
       role: 'admin',
       mustChangePassword: false,
+      isActive: true, // Siempre activo
     },
     create: {
       username: 'garv',
@@ -27,6 +28,7 @@ async function main() {
       grado: 'ADMINISTRADOR',
       role: 'admin',
       mustChangePassword: false,
+      isActive: true, // Siempre activo
     },
   })
 

@@ -21,6 +21,7 @@ model User {
   role               String           @default("user")
   telefono           String           @default("")
   mustChangePassword Boolean          @default(true)
+  isActive           Boolean          @default(true) // Indica si el usuario puede acceder al sistema
   visits             Visit[]
   vpnCertificates    VpnCertificate[]
 

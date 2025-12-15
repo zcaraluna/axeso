@@ -16,6 +16,7 @@ interface User {
   telefono: string;
   grado: string;
   role: string;
+  isActive?: boolean;
   createdAt: string;
 }
 
@@ -193,6 +194,41 @@ export default function Usuarios() {
     }
   };
 
+  const handleToggleUserStatus = async (userId: string, username: string, currentStatus: boolean) => {
+    // Solo el superadmin (garv) puede habilitar/deshabilitar usuarios
+    if (user?.username !== 'garv') {
+      setError('Solo el superadmin puede habilitar/deshabilitar usuarios');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    // No permitir deshabilitar al superadmin
+    if (username === 'garv' && currentStatus) {
+      setError('No se puede deshabilitar al superadmin');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const action = currentStatus ? 'deshabilitar' : 'habilitar';
+    if (confirm(`¿Está seguro de ${action} el usuario "${username}"?`)) {
+      try {
+        const response = await apiClient.toggleUserStatus(userId, !currentStatus);
+        if (response.data) {
+          setSuccess(`Usuario ${currentStatus ? 'deshabilitado' : 'habilitado'} exitosamente`);
+          loadUsers();
+          setTimeout(() => setSuccess(''), 3000);
+        } else {
+          setError(response.error || 'Error al cambiar el estado del usuario');
+          setTimeout(() => setError(''), 3000);
+        }
+      } catch (error) {
+        console.error('Error toggling user status:', error);
+        setError('Error al cambiar el estado del usuario');
+        setTimeout(() => setError(''), 3000);
+      }
+    }
+  };
+
   const handleDeleteUser = async (userId: string, username: string) => {
     if (userId === user?.id) {
       setError('No puedes eliminar tu propio usuario');
@@ -289,19 +325,20 @@ export default function Usuarios() {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Grado</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Teléfono</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Rol</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
                       No hay usuarios registrados
                     </td>
                   </tr>
                 ) : (
                   users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50 transition">
+                    <tr key={u.id} className={`hover:bg-slate-50 transition ${u.isActive === false ? 'bg-red-50 opacity-75' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-medium text-slate-900">{u.username}</span>
                       </td>
@@ -330,7 +367,32 @@ export default function Usuarios() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded ${
+                          u.isActive !== false
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {u.isActive !== false ? 'Activo' : 'Inhabilitado'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2">
+                          {user?.username === 'garv' && (
+                            <button
+                              onClick={() => handleToggleUserStatus(u.id, u.username, u.isActive !== false)}
+                              disabled={u.username === 'garv'}
+                              className={`px-3 py-1 text-sm font-medium rounded transition ${
+                                u.username === 'garv'
+                                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                  : u.isActive !== false
+                                  ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                                  : 'bg-green-600 hover:bg-green-700 text-white'
+                              }`}
+                              title={u.username === 'garv' ? 'No se puede deshabilitar al superadmin' : u.isActive !== false ? 'Deshabilitar usuario' : 'Habilitar usuario'}
+                            >
+                              {u.isActive !== false ? 'Deshabilitar' : 'Habilitar'}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleOpenModal(u)}
                             className="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded transition"
