@@ -15,7 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
   updateUser: (updatedUser: User) => void;
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -62,12 +62,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('authToken', newToken);
         localStorage.setItem('user', JSON.stringify(userData));
         
-        return true;
+        return { success: true };
       }
-      return false;
+      
+      // Capturar el mensaje de error del backend
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || 'Usuario o contraseña incorrectos';
+      
+      return { success: false, error: errorMessage };
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return { success: false, error: 'Error de conexión' };
     }
   };
 

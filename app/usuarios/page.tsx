@@ -58,7 +58,8 @@ export default function Usuarios() {
     credencial: '',
     telefono: '',
     grado: 'FUNCIONARIO/A',
-    role: 'user'
+    role: 'user',
+    isActive: true
   });
 
   useEffect(() => {
@@ -103,7 +104,8 @@ export default function Usuarios() {
         credencial: userToEdit.credencial,
         telefono: userToEdit.telefono,
         grado: userToEdit.grado,
-        role: userToEdit.role
+        role: userToEdit.role,
+        isActive: userToEdit.isActive !== false
       });
     } else {
       setEditingUser(null);
@@ -116,7 +118,8 @@ export default function Usuarios() {
         credencial: '',
         telefono: '',
         grado: 'FUNCIONARIO/A',
-        role: 'user'
+        role: 'user',
+        isActive: true
       });
     }
     setShowModal(true);
@@ -166,6 +169,11 @@ export default function Usuarios() {
           updateData.password = formData.password;
         }
 
+        // Solo los administradores pueden cambiar isActive
+        if (user?.role === 'admin') {
+          updateData.isActive = formData.isActive;
+        }
+
         const response = await apiClient.updateUser(editingUser.id, updateData);
         if (response.data) {
           setSuccess('Usuario actualizado exitosamente');
@@ -194,41 +202,6 @@ export default function Usuarios() {
     }
   };
 
-  const handleToggleUserStatus = async (userId: string, username: string, currentStatus: boolean) => {
-    // Solo el superadmin (garv) puede habilitar/deshabilitar usuarios
-    if (user?.username !== 'garv') {
-      setError('Solo el superadmin puede habilitar/deshabilitar usuarios');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
-    // No permitir deshabilitar al superadmin
-    if (username === 'garv' && currentStatus) {
-      setError('No se puede deshabilitar al superadmin');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
-    const action = currentStatus ? 'deshabilitar' : 'habilitar';
-    if (confirm(`¿Está seguro de ${action} el usuario "${username}"?`)) {
-      try {
-        const response = await apiClient.toggleUserStatus(userId, !currentStatus);
-        if (response.data) {
-          setSuccess(`Usuario ${currentStatus ? 'deshabilitado' : 'habilitado'} exitosamente`);
-          loadUsers();
-          setTimeout(() => setSuccess(''), 3000);
-        } else {
-          setError(response.error || 'Error al cambiar el estado del usuario');
-          setTimeout(() => setError(''), 3000);
-        }
-      } catch (error) {
-        console.error('Error toggling user status:', error);
-        setError('Error al cambiar el estado del usuario');
-        setTimeout(() => setError(''), 3000);
-      }
-    }
-  };
-
   const handleDeleteUser = async (userId: string, username: string) => {
     if (userId === user?.id) {
       setError('No puedes eliminar tu propio usuario');
@@ -249,9 +222,9 @@ export default function Usuarios() {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     if (field === 'nombres' || field === 'apellidos') {
-      setFormData({ ...formData, [field]: value.toUpperCase() });
+      setFormData({ ...formData, [field]: typeof value === 'string' ? value.toUpperCase() : value });
     } else {
       setFormData({ ...formData, [field]: value });
     }
@@ -377,22 +350,6 @@ export default function Usuarios() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2">
-                          {user?.username === 'garv' && (
-                            <button
-                              onClick={() => handleToggleUserStatus(u.id, u.username, u.isActive !== false)}
-                              disabled={u.username === 'garv'}
-                              className={`px-3 py-1 text-sm font-medium rounded transition ${
-                                u.username === 'garv'
-                                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                                  : u.isActive !== false
-                                  ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                                  : 'bg-green-600 hover:bg-green-700 text-white'
-                              }`}
-                              title={u.username === 'garv' ? 'No se puede deshabilitar al superadmin' : u.isActive !== false ? 'Deshabilitar usuario' : 'Habilitar usuario'}
-                            >
-                              {u.isActive !== false ? 'Deshabilitar' : 'Habilitar'}
-                            </button>
-                          )}
                           <button
                             onClick={() => handleOpenModal(u)}
                             className="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded transition"
@@ -575,6 +532,37 @@ export default function Usuarios() {
                   </select>
             </div>
           </div>
+
+          {/* Campo isActive - Solo visible para administradores */}
+          {user?.role === 'admin' && editingUser && (
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                  disabled={editingUser.username === 'garv'}
+                  className="w-5 h-5 text-blue-600 border-2 border-slate-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <label htmlFor="isActive" className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${
+                    formData.isActive
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {formData.isActive ? 'Usuario Activo' : 'Usuario Inhabilitado'}
+                  </span>
+                  {editingUser.username === 'garv' && (
+                    <span className="text-xs text-slate-500">(No se puede deshabilitar al superadmin)</span>
+                  )}
+                </label>
+              </div>
+              <p className="text-xs text-slate-500 mt-2 ml-8">
+                Los usuarios inhabilitados no podrán iniciar sesión en el sistema.
+              </p>
+            </div>
+          )}
 
               <div className="flex gap-3 pt-4">
                 <button

@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar si el usuario está activo
-    if (!user.isActive) {
-      return NextResponse.json({ error: 'Tu cuenta ha sido deshabilitada. Contacta al administrador.' }, { status: 403 })
+    if (user.isActive === false) {
+      return NextResponse.json({ error: 'Usuario no autorizado' }, { status: 403 })
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password)

@@ -24,9 +24,9 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     
-    const success = await login(username, password);
+    const result = await login(username, password);
     
-    if (success) {
+    if (result.success) {
       // Verificar si el usuario debe cambiar su contraseña
       const userData = localStorage.getItem('user');
       if (userData) {
@@ -38,7 +38,7 @@ export default function LoginPage() {
         }
       }
     } else {
-      setError('Usuario o contraseña incorrectos');
+      setError(result.error || 'Usuario o contraseña incorrectos');
     }
     
     setLoading(false);

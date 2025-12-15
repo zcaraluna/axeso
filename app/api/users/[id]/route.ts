@@ -37,8 +37,8 @@ export async function PUT(
       select: { username: true, role: true }
     });
 
-    if (!currentUser || currentUser.username !== 'garv') {
-      return NextResponse.json({ error: 'Solo el superadmin puede editar usuarios' }, { status: 403 });
+    if (!currentUser || currentUser.role !== 'admin') {
+      return NextResponse.json({ error: 'Solo los administradores pueden editar usuarios' }, { status: 403 });
     }
 
     const { id } = await context.params
@@ -51,7 +51,8 @@ export async function PUT(
       telefono, 
       grado, 
       role,
-      password 
+      password,
+      isActive
     } = body
 
     // Verificar si el usuario existe
@@ -88,6 +89,15 @@ export async function PUT(
     // Si se proporcionó una nueva contraseña, hashearla
     if (password) {
       updateData.password = await bcrypt.hash(password, 12)
+    }
+
+    // Si se proporcionó isActive, validar y actualizar
+    if (typeof isActive === 'boolean') {
+      // No permitir deshabilitar al superadmin
+      if (existingUser.username === 'garv' && !isActive) {
+        return NextResponse.json({ error: 'No se puede deshabilitar al superadmin' }, { status: 400 })
+      }
+      updateData.isActive = isActive
     }
 
     // Actualizar el usuario
