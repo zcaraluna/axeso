@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
       console.log(`[VPN Status] Verificando IP: ${realIp}`);
       console.log(`[VPN Status] Archivo existe, tamaño: ${content.length} bytes`);
       
+      // Mostrar primeras líneas del archivo para debugging
+      const previewLines = content.split('\n').slice(0, 20).join('\n');
+      console.log(`[VPN Status] Primeras 20 líneas del archivo:\n${previewLines}`);
+      
       // Buscar la IP en el archivo de estado
       // Formato del archivo:
       // OpenVPN CLIENT LIST
@@ -77,18 +81,57 @@ export async function GET(request: NextRequest) {
       let realAddress = '';
       let virtualAddress = '';
       
+      // Arrays para debugging
+      const allClientListIps: string[] = [];
+      const allRoutingTableIps: string[] = [];
+      
       for (const line of lines) {
         const trimmedLine = line.trim();
         
-        // Detectar inicio de sección CLIENT LIST
-        if (trimmedLine === 'OpenVPN CLIENT LIST' || trimmedLine === 'CLIENT LIST') {
+        // Detectar inicio de sección CLIENT LIST (múltiples formatos)
+        if (trimmedLine === 'OpenVPN CLIENT LIST' || 
+            trimmedLine === 'CLIENT LIST' || 
+            trimmedLine.startsWith('HEADER,CLIENT_LIST')) {
           inClientList = true;
           inRoutingTable = false;
           continue;
         }
         
-        // Detectar inicio de ROUTING TABLE
-        if (trimmedLine === 'ROUTING TABLE') {
+        // Las líneas de datos pueden empezar directamente con CLIENT_LIST,
+        if (trimmedLine.startsWith('CLIENT_LIST,')) {
+          inClientList = true;
+          inRoutingTable = false;
+          // Procesar esta línea como línea de datos
+          const parts = trimmedLine.substring('CLIENT_LIST,'.length).split(',');
+          if (parts.length >= 2) {
+            const addr = parts[1].trim(); // Real Address está en el índice 1 después de quitar "CLIENT_LIST,"
+            let ipFromAddress = '';
+            
+            if (addr.includes(':')) {
+              ipFromAddress = addr.split(':')[0];
+            } else {
+              ipFromAddress = addr;
+            }
+            
+            // Guardar todas las IPs encontradas para debugging
+            if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress)) {
+              allClientListIps.push(ipFromAddress);
+            }
+            
+            if (ipFromAddress === realIp) {
+              foundInClientList = true;
+              commonName = parts[0]?.trim() || '';
+              realAddress = addr;
+              virtualAddress = parts[2]?.trim() || '';
+              connectedSinceStr = parts[6]?.trim() || ''; // Índice 6 en formato CLIENT_LIST,
+              console.log(`[VPN Status] ✓ IP ${realIp} encontrada en CLIENT_LIST, formato: ${trimmedLine}`);
+            }
+          }
+          continue;
+        }
+        
+        // Detectar inicio de ROUTING TABLE (múltiples formatos)
+        if (trimmedLine === 'ROUTING TABLE' || trimmedLine.startsWith('HEADER,ROUTING_TABLE')) {
           inClientList = false;
           inRoutingTable = true;
           continue;
@@ -101,9 +144,15 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        // Buscar en CLIENT LIST
-        if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,')) {
+        // Buscar en CLIENT LIST (líneas normales, sin prefijo CLIENT_LIST,)
+        if (inClientList && trimmedLine && 
+            !trimmedLine.startsWith('#') && 
+            !trimmedLine.startsWith('Updated,') && 
+            !trimmedLine.startsWith('Common Name,') && 
+            !trimmedLine.startsWith('HEADER,') && 
+            !trimmedLine.startsWith('CLIENT_LIST,')) {
           const parts = trimmedLine.split(',');
+          
           if (parts.length >= 2) {
             const addr = parts[1].trim();
             let ipFromAddress = '';
@@ -112,18 +161,22 @@ export async function GET(request: NextRequest) {
             if (addr.includes(':')) {
               ipFromAddress = addr.split(':')[0];
             } else {
-              // Si no tiene puerto, la dirección completa puede ser la IP
               ipFromAddress = addr;
             }
             
+            // Guardar todas las IPs encontradas para debugging
+            if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress)) {
+              allClientListIps.push(ipFromAddress);
+            }
+            
             // Verificar si es una IP válida y coincide con la IP buscada
-            if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
+            if (ipFromAddress === realIp) {
               foundInClientList = true;
               commonName = parts[0]?.trim() || '';
               realAddress = addr;
               virtualAddress = parts[2]?.trim() || '';
-              connectedSinceStr = parts[5]?.trim() || '';
-              console.log(`[VPN Status] IP ${realIp} encontrada en CLIENT LIST: ${trimmedLine}`);
+              connectedSinceStr = parts[5]?.trim() || ''; // Índice 5 en formato normal
+              console.log(`[VPN Status] ✓ IP ${realIp} encontrada en CLIENT LIST (formato normal): ${trimmedLine}`);
               break;
             }
           }
@@ -135,8 +188,37 @@ export async function GET(request: NextRequest) {
       for (const line of lines) {
         const trimmedLine = line.trim();
         
-        if (trimmedLine === 'ROUTING TABLE') {
+        if (trimmedLine === 'ROUTING TABLE' || trimmedLine.startsWith('HEADER,ROUTING_TABLE')) {
           inRoutingTable = true;
+          continue;
+        }
+        
+        // Las líneas de datos pueden empezar directamente con ROUTING_TABLE,
+        if (trimmedLine.startsWith('ROUTING_TABLE,')) {
+          inRoutingTable = true;
+          // Procesar esta línea como línea de datos
+          const routingParts = trimmedLine.substring('ROUTING_TABLE,'.length).split(',');
+          if (routingParts.length >= 3) {
+            const routingRealAddress = routingParts[2]?.trim(); // Real Address está en índice 2 después de quitar "ROUTING_TABLE,"
+            if (routingRealAddress && routingRealAddress.includes(':')) {
+              const routingIpFromAddress = routingRealAddress.split(':')[0];
+              if (/^\d+\.\d+\.\d+\.\d+$/.test(routingIpFromAddress)) {
+                allRoutingTableIps.push(routingIpFromAddress);
+              }
+              if (routingIpFromAddress === realIp) {
+                const lastRefStr = routingParts[3]?.trim(); // Last Ref está en índice 3
+                if (lastRefStr) {
+                  try {
+                    routingTableLastRef = new Date(lastRefStr);
+                    console.log(`[VPN Status] ✓ IP ${realIp} encontrada en ROUTING_TABLE, formato con Last Ref: ${lastRefStr}`);
+                  } catch {
+                    // Ignorar si no se puede parsear
+                  }
+                }
+                break;
+              }
+            }
+          }
           continue;
         }
         
@@ -145,25 +227,34 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        if (inRoutingTable && trimmedLine && !trimmedLine.startsWith('Virtual Address,') && trimmedLine.includes(realIp)) {
+        // Buscar en ROUTING TABLE (líneas normales, sin prefijo ROUTING_TABLE,)
+        if (inRoutingTable && trimmedLine && 
+            !trimmedLine.startsWith('Virtual Address,') && 
+            !trimmedLine.startsWith('HEADER,') && 
+            !trimmedLine.startsWith('ROUTING_TABLE,')) {
           const routingParts = trimmedLine.split(',');
-          if (routingParts.length >= 4) {
+          
+          if (routingParts.length >= 3) {
             const routingRealAddress = routingParts[2]?.trim();
             let routingIpFromAddress = '';
             
-            // Extraer IP: puede tener formato IP:PUERTO o solo IP
             if (routingRealAddress && routingRealAddress.includes(':')) {
               routingIpFromAddress = routingRealAddress.split(':')[0];
             } else if (routingRealAddress) {
               routingIpFromAddress = routingRealAddress;
             }
             
-            if (routingIpFromAddress && /^\d+\.\d+\.\d+\.\d+$/.test(routingIpFromAddress) && routingIpFromAddress === realIp) {
+            // Guardar todas las IPs encontradas para debugging
+            if (/^\d+\.\d+\.\d+\.\d+$/.test(routingIpFromAddress)) {
+              allRoutingTableIps.push(routingIpFromAddress);
+            }
+            
+            if (routingIpFromAddress === realIp) {
               const lastRefStr = routingParts[3]?.trim();
               if (lastRefStr) {
                 try {
                   routingTableLastRef = new Date(lastRefStr);
-                  console.log(`[VPN Status] IP ${realIp} encontrada en ROUTING TABLE con Last Ref: ${lastRefStr}`);
+                  console.log(`[VPN Status] ✓ IP ${realIp} encontrada en ROUTING TABLE (formato normal) con Last Ref: ${lastRefStr}`);
                 } catch {
                   // Ignorar si no se puede parsear
                 }
@@ -239,7 +330,18 @@ export async function GET(request: NextRequest) {
         connectionInfo,
         checkedAt: new Date().toISOString(),
         fileLastModified: lastModified.toISOString(),
-        fileAgeSeconds: Math.floor((Date.now() - lastModified.getTime()) / 1000)
+        fileAgeSeconds: Math.floor((Date.now() - lastModified.getTime()) / 1000),
+        debug: {
+          foundInClientList,
+          hasRoutingTableLastRef: routingTableLastRef !== null,
+          routingTableLastRef: routingTableLastRef?.toISOString() || null,
+          fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
+          searchedIp: realIp,
+          allClientListIps, // Todas las IPs encontradas en CLIENT LIST
+          allRoutingTableIps, // Todas las IPs encontradas en ROUTING TABLE
+          clientListCount: allClientListIps.length,
+          routingTableCount: allRoutingTableIps.length,
+        }
       });
       
       // Agregar headers para evitar caché
