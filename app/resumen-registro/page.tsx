@@ -91,31 +91,40 @@ function ResumenContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-16">
-      <nav className="bg-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-xl font-bold text-slate-800 hover:text-blue-600 transition">
-              aXeso - Policía Nacional (DCHPEF)
-            </Link>
-            <Link href="/dashboard" className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition text-sm font-medium">
-              Volver al Inicio
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          nav,
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-16">
+        <nav className="bg-white shadow-lg no-print">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <Link href="/dashboard" className="text-xl font-bold text-slate-800 hover:text-blue-600 transition">
+                aXeso - Policía Nacional (DCHPEF)
+              </Link>
+              <Link href="/dashboard" className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition text-sm font-medium">
+                Volver al Inicio
+              </Link>
             </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Registro Exitoso</h1>
-            <p className="text-slate-600">La entrada ha sido registrada correctamente</p>
           </div>
+        </nav>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow-2xl p-8">
+            <div className="text-center mb-8 no-print">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">Registro Exitoso</h1>
+              <p className="text-slate-600">La entrada ha sido registrada correctamente</p>
+            </div>
 
           <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-6 mb-6">
             <div className="text-center">
@@ -181,29 +190,30 @@ function ResumenContent() {
 
           </div>
 
-          <div className="flex gap-4">
-            <button
-              onClick={() => setShowTicket(true)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-lg hover:shadow-xl"
-            >
-              Imprimir Ticket de Acceso
-            </button>
-            <Link href="/registro-entrada" className="flex-1">
+            <div className="flex gap-4 no-print">
               <button
-                type="button"
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-200"
+                onClick={() => setShowTicket(true)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-lg hover:shadow-xl"
               >
-                Nuevo Registro
+                Imprimir Ticket de Acceso
               </button>
-            </Link>
-            <Link href="/dashboard" className="flex-1">
-              <button
-                type="button"
-                className="w-full bg-slate-600 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-              >
-                Inicio
-              </button>
-            </Link>
+              <Link href="/registro-entrada" className="flex-1">
+                <button
+                  type="button"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-200"
+                >
+                  Nuevo Registro
+                </button>
+              </Link>
+              <Link href="/dashboard" className="flex-1">
+                <button
+                  type="button"
+                  className="w-full bg-slate-600 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition duration-200"
+                >
+                  Inicio
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -223,8 +233,7 @@ function ResumenContent() {
           onClose={() => setShowTicket(false)}
         />
       )}
-
-    </div>
+    </>
   );
 }
 

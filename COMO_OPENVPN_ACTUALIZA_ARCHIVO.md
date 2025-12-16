@@ -150,3 +150,4 @@ void update_status_file() {
 
 El archivo es solo un **reflejo** del estado interno de OpenVPN, no tiene lógica propia.
 
+
