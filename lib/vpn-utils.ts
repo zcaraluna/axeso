@@ -73,7 +73,9 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
     const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}`;
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000);
+    // Aumentado timeout de 1s a 2s para dar más tiempo si el servidor está bajo carga
+    // o si el archivo de estado es grande
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
     
     try {
       const response = await fetch(checkUrl, {
@@ -87,12 +89,18 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
         const data = await response.json();
         console.log(`[VPN Utils] Verificación para IP ${clientIp}:`, data);
         return data.isActive === true;
+      } else {
+        console.warn(`[VPN Utils] Verificación falló para IP ${clientIp}, status: ${response.status}`);
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      // Si es timeout, no es crítico
-      if (fetchError instanceof Error && fetchError.name !== 'AbortError') {
-        console.error('[VPN Utils] Error verificando estado:', fetchError.message);
+      // Si es timeout, loguearlo pero no es crítico (puede ser carga del servidor)
+      if (fetchError instanceof Error) {
+        if (fetchError.name === 'AbortError') {
+          console.warn(`[VPN Utils] Timeout verificando estado VPN para IP ${clientIp} (2s)`);
+        } else {
+          console.error('[VPN Utils] Error verificando estado:', fetchError.message);
+        }
       }
     }
     
@@ -109,7 +117,8 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
       });
       
       const controller2 = new AbortController();
-      const timeoutId2 = setTimeout(() => controller2.abort(), 1000);
+      // Aumentado timeout para consistencia con el primer intento
+      const timeoutId2 = setTimeout(() => controller2.abort(), 2000);
       
       try {
         const response = await fetch(checkRequest, {
