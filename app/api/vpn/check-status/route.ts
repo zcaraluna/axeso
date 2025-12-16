@@ -266,40 +266,60 @@ export async function GET(request: NextRequest) {
       }
       
       // Determinar si la conexión está activa
-      // Estrategia: Usar Last Ref como fuente principal de verdad (más confiable)
-      // - Si tiene Last Ref reciente (≤15s) → activa (independientemente de CLIENT LIST)
-      //   Esto evita alternancia cuando el archivo se actualiza y la conexión desaparece temporalmente de CLIENT LIST
-      // - Si NO tiene Last Ref pero está en CLIENT LIST → verificar Connected Since
-      // - Si Last Ref es antiguo (>15s) Y no está en CLIENT LIST → desconectada
+      // Lógica simplificada y determinista para evitar intermitencia:
+      // REGLA PRINCIPAL: La conexión está activa SOLO si:
+      // 1. Está en CLIENT LIST (requisito obligatorio)
+      // 2. Y tiene Last Ref reciente (≤12s) O Connected Since reciente (≤20s)
+      // Si NO está en CLIENT LIST → definitivamente inactiva (sin excepciones)
       const now = Date.now();
       let isActive = false;
       
-      if (routingTableLastRef) {
-        // Si hay Last Ref, usarlo como fuente principal de verdad
-        const timeSinceLastRef = now - routingTableLastRef.getTime();
-        // Umbral de 15 segundos para dar estabilidad
-        // El archivo se actualiza cada 10 segundos, así que 15 segundos es seguro
-        isActive = timeSinceLastRef <= 15 * 1000;
-      } else if (foundInClientList) {
-        // Si NO hay Last Ref pero está en CLIENT LIST, verificar Connected Since
-        if (connectedSinceStr) {
+      // Verificar que el archivo se actualizó recientemente
+      const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
+      const fileIsRecent = timeSinceFileUpdate <= 20 * 1000; // 20 segundos
+      
+      console.log(`[VPN Status] Análisis de conexión para IP ${realIp}:`, {
+        foundInClientList,
+        hasRoutingTableLastRef: routingTableLastRef !== null,
+        routingTableLastRef: routingTableLastRef?.toISOString() || null,
+        timeSinceFileUpdate: Math.floor(timeSinceFileUpdate / 1000) + 's',
+        fileIsRecent
+      });
+      
+      // REGLA 1: Si NO está en CLIENT LIST → INACTIVA (sin excepciones)
+      if (!foundInClientList) {
+        isActive = false;
+        console.log(`[VPN Status] IP ${realIp} NO está en CLIENT LIST → INACTIVA`);
+      } 
+      // REGLA 2: Si está en CLIENT LIST, verificar Last Ref o Connected Since
+      else {
+        if (routingTableLastRef) {
+          const timeSinceLastRef = now - routingTableLastRef.getTime();
+          const lastRefSeconds = Math.floor(timeSinceLastRef / 1000);
+          
+          // Está en CLIENT LIST y tiene Last Ref: activa si Last Ref ≤12s
+          isActive = timeSinceLastRef <= 12 * 1000;
+          console.log(`[VPN Status] En CLIENT LIST, Last Ref hace ${lastRefSeconds}s → activa: ${isActive}`);
+        } else if (connectedSinceStr) {
+          // Está en CLIENT LIST pero NO tiene Last Ref: usar Connected Since
           try {
             const connectedSince = new Date(connectedSinceStr);
             const timeSinceConnection = now - connectedSince.getTime();
-            const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
-            // Solo considerar activa si la conexión es muy reciente Y el archivo se actualizó recientemente
-            // Esto cubre el caso donde la conexión es muy nueva y aún no tiene Last Ref
-            isActive = timeSinceConnection <= 20 * 1000 && timeSinceFileUpdate <= 15 * 1000;
+            const connectionSeconds = Math.floor(timeSinceConnection / 1000);
+            
+            // Solo activa si Connected Since es reciente (≤20s) Y el archivo se actualizó recientemente
+            isActive = timeSinceConnection <= 20 * 1000 && fileIsRecent;
+            console.log(`[VPN Status] En CLIENT LIST sin Last Ref, Connected Since hace ${connectionSeconds}s, archivo reciente: ${fileIsRecent} → activa: ${isActive}`);
           } catch {
             isActive = false;
+            console.log(`[VPN Status] Error parseando Connected Since → INACTIVA`);
           }
         } else {
-          // Si está en CLIENT LIST pero no tiene Last Ref ni Connected Since,
-          // puede ser un error en el archivo, pero por seguridad asumir inactiva
+          // Está en CLIENT LIST pero sin Last Ref ni Connected Since → INACTIVA por seguridad
           isActive = false;
+          console.log(`[VPN Status] En CLIENT LIST pero sin Last Ref ni Connected Since → INACTIVA`);
         }
       }
-      // Si NO está en CLIENT LIST y NO tiene Last Ref, definitivamente NO está activa
       
       // Si la conexión está activa, establecer found y connectionInfo
       if (isActive) {
