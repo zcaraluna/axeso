@@ -30,6 +30,10 @@ export async function GET(request: NextRequest) {
     try {
       const content = await readFile(statusFile, 'utf-8');
       
+      // Log para debugging
+      console.log(`[VPN Status] Verificando IP: ${realIp}`);
+      console.log(`[VPN Status] Archivo existe, tamaño: ${content.length} bytes`);
+      
       // Buscar la IP en el archivo de estado
       // Formato del archivo:
       // OpenVPN CLIENT LIST
@@ -102,17 +106,25 @@ export async function GET(request: NextRequest) {
           const parts = trimmedLine.split(',');
           if (parts.length >= 2) {
             const addr = parts[1].trim();
+            let ipFromAddress = '';
+            
+            // Extraer IP: puede tener formato IP:PUERTO o solo IP
             if (addr.includes(':')) {
-              const ipFromAddress = addr.split(':')[0];
-              
-              if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
-                foundInClientList = true;
-                commonName = parts[0]?.trim() || '';
-                realAddress = addr;
-                virtualAddress = parts[2]?.trim() || '';
-                connectedSinceStr = parts[5]?.trim() || '';
-                break;
-              }
+              ipFromAddress = addr.split(':')[0];
+            } else {
+              // Si no tiene puerto, la dirección completa puede ser la IP
+              ipFromAddress = addr;
+            }
+            
+            // Verificar si es una IP válida y coincide con la IP buscada
+            if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
+              foundInClientList = true;
+              commonName = parts[0]?.trim() || '';
+              realAddress = addr;
+              virtualAddress = parts[2]?.trim() || '';
+              connectedSinceStr = parts[5]?.trim() || '';
+              console.log(`[VPN Status] IP ${realIp} encontrada en CLIENT LIST: ${trimmedLine}`);
+              break;
             }
           }
         }
@@ -137,19 +149,26 @@ export async function GET(request: NextRequest) {
           const routingParts = trimmedLine.split(',');
           if (routingParts.length >= 4) {
             const routingRealAddress = routingParts[2]?.trim();
+            let routingIpFromAddress = '';
+            
+            // Extraer IP: puede tener formato IP:PUERTO o solo IP
             if (routingRealAddress && routingRealAddress.includes(':')) {
-              const routingIpFromAddress = routingRealAddress.split(':')[0];
-              if (routingIpFromAddress === realIp) {
-                const lastRefStr = routingParts[3]?.trim();
-                if (lastRefStr) {
-                  try {
-                    routingTableLastRef = new Date(lastRefStr);
-                  } catch {
-                    // Ignorar si no se puede parsear
-                  }
+              routingIpFromAddress = routingRealAddress.split(':')[0];
+            } else if (routingRealAddress) {
+              routingIpFromAddress = routingRealAddress;
+            }
+            
+            if (routingIpFromAddress && /^\d+\.\d+\.\d+\.\d+$/.test(routingIpFromAddress) && routingIpFromAddress === realIp) {
+              const lastRefStr = routingParts[3]?.trim();
+              if (lastRefStr) {
+                try {
+                  routingTableLastRef = new Date(lastRefStr);
+                  console.log(`[VPN Status] IP ${realIp} encontrada en ROUTING TABLE con Last Ref: ${lastRefStr}`);
+                } catch {
+                  // Ignorar si no se puede parsear
                 }
-                break;
               }
+              break;
             }
           }
         }
@@ -201,6 +220,13 @@ export async function GET(request: NextRequest) {
           connectedSince: connectedSinceStr || '',
           lastRef: routingTableLastRef?.toISOString() || null
         };
+        console.log(`[VPN Status] Conexión ACTIVA para IP ${realIp}`, connectionInfo);
+      } else {
+        console.log(`[VPN Status] Conexión INACTIVA para IP ${realIp}`, {
+          foundInClientList,
+          routingTableLastRef: routingTableLastRef?.toISOString() || null,
+          connectedSinceStr: connectedSinceStr || null
+        });
       }
       
       // Obtener información de última actualización del archivo
