@@ -295,18 +295,18 @@ export default function GestionDispositivosPage() {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Código</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Creado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Expira</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Código</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Creado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Expira</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
                 {codigos.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-slate-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-slate-700">
                       No hay códigos de activación
                     </td>
                   </tr>
@@ -341,10 +341,10 @@ export default function GestionDispositivosPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
                         {formatearFecha(codigo.creado_en)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
                         {codigo.expira_en ? formatearFecha(codigo.expira_en) : 'Sin expiración'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -374,18 +374,18 @@ export default function GestionDispositivosPage() {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">IP</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Autorizado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Último Acceso</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">IP</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Autorizado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Último Acceso</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
                 {dispositivos.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-slate-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-slate-700">
                       No hay dispositivos autorizados
                     </td>
                   </tr>
@@ -396,17 +396,17 @@ export default function GestionDispositivosPage() {
                         <div className="text-sm font-medium text-slate-900">
                           {dispositivo.nombre || 'Sin nombre'}
                         </div>
-                        <div className="text-xs text-slate-500 font-mono truncate max-w-xs">
+                        <div className="text-xs text-slate-700 font-mono truncate max-w-xs">
                           {dispositivo.fingerprint.substring(0, 16)}...
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
                         {dispositivo.ip_address || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
                         {formatearFecha(dispositivo.autorizado_en)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
                         {formatearFecha(dispositivo.ultimo_acceso)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
