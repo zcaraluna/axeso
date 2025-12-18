@@ -113,44 +113,6 @@ class ApiClient {
       body: JSON.stringify({ isActive }),
     });
   }
-
-  // VPN API
-  async getVpnCertificates() {
-    return this.request('/vpn/certificates');
-  }
-
-  async getVpnCertificate(id: string) {
-    return this.request(`/vpn/certificates/${id}`);
-  }
-
-  async createVpnCertificate(certificateData: {
-    targetUserId?: string;
-    certificateName: string;
-    deviceName: string;
-    location?: string;
-    validityDays?: number;
-    notes?: string;
-    password?: string;
-  }) {
-    return this.request('/vpn/certificates', {
-      method: 'POST',
-      body: JSON.stringify(certificateData),
-    });
-  }
-
-  async revokeVpnCertificate(id: string) {
-    return this.request(`/vpn/certificates/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async getVpnConnections(certificateId?: string, limit?: number) {
-    const params = new URLSearchParams();
-    if (certificateId) params.append('certificateId', certificateId);
-    if (limit) params.append('limit', limit.toString());
-    
-    return this.request(`/vpn/connections?${params}`);
-  }
 }
 
 export const apiClient = new ApiClient();

@@ -23,7 +23,6 @@ model User {
   mustChangePassword Boolean          @default(true)
   isActive           Boolean          @default(true) // Indica si el usuario puede acceder al sistema
   visits             Visit[]
-  vpnCertificates    VpnCertificate[]
 
   @@map("users")
 }
@@ -50,44 +49,4 @@ model Visit {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("visits")
-}
-
-model VpnCertificate {
-  id              String          @id @default(cuid())
-  userId          String?
-  certificateName String          @unique
-  deviceName      String
-  location        String?
-  commonName      String
-  status          String          @default("active")
-  hasPassword     Boolean         @default(false) // Indica si el certificado tiene contraseña
-  passwordHash    String?         // Hash de la contraseña del certificado (bcrypt)
-  issuedAt        DateTime        @default(now())
-  expiresAt       DateTime
-  revokedAt       DateTime?
-  revokedBy       String?
-  lastUsedAt      DateTime?
-  ipAddress       String?
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  user            User?           @relation(fields: [userId], references: [id])
-  connections     VpnConnection[]
-
-  @@map("vpn_certificates")
-}
-
-model VpnConnection {
-  id             String         @id @default(cuid())
-  certificateId  String
-  ipAddress      String
-  realIpAddress  String?
-  connectedAt    DateTime       @default(now())
-  disconnectedAt DateTime?
-  bytesReceived  BigInt         @default(0)
-  bytesSent      BigInt         @default(0)
-  duration       Int?
-  certificate    VpnCertificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
-
-  @@map("vpn_connections")
 }

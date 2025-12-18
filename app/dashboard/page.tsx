@@ -210,21 +210,6 @@ export default function Dashboard() {
             </div>
             </Link>
           )}
-          {user?.username === 'garv' && (
-            <Link href="/vpn" className="block group">
-              <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-all duration-200 border-2 border-transparent hover:border-indigo-500 h-full">
-                <div className="flex items-center mb-3">
-                  <img src="/globe.svg" alt="Gestión VPN" className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform" />
-                  <h2 className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition">
-                    Gestión VPN
-                  </h2>
-                </div>
-                <p className="text-slate-600">
-                  Administrar certificados y conexiones VPN
-                </p>
-              </div>
-            </Link>
-          )}
         </div>
       </div>
     </div>
