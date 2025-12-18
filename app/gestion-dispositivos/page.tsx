@@ -105,6 +105,7 @@ export default function GestionDispositivosPage() {
       const dispositivosRecibidos = data.dispositivos || [];
       setDispositivos(dispositivosRecibidos);
       const codigosRecibidos = data.codigos || [];
+      console.log('🔍 DEBUG: Códigos recibidos:', codigosRecibidos.length, codigosRecibidos);
       setCodigos(codigosRecibidos);
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -215,7 +216,7 @@ export default function GestionDispositivosPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingBottom: '4rem' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingBottom: '8rem', minHeight: 'calc(100vh - 200px)' }}>
         {/* Alerta de código generado */}
         {codigoGenerado && (
           <div className="mb-6 bg-green-50 border-2 border-green-500 rounded-lg p-4">
@@ -347,7 +348,7 @@ export default function GestionDispositivosPage() {
           </div>
         )}
 
-        {/* Tabla Unificada de Dispositivos y Códigos */}
+        {/* Tabla 1: Dispositivos Autorizados */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-bold text-slate-800">
@@ -511,15 +512,17 @@ export default function GestionDispositivosPage() {
         </div>
 
         {/* Separador visual prominente */}
-        <div className="my-12">
-          <div className="border-t-4 border-blue-500"></div>
-          <div className="text-center mt-4">
-            <h3 className="text-2xl font-bold text-white">TODOS LOS CÓDIGOS DE ACTIVACIÓN</h3>
+        <div className="my-16 py-8">
+          <div className="border-t-4 border-blue-500 shadow-lg"></div>
+          <div className="text-center mt-6 mb-6">
+            <h3 className="text-3xl font-bold text-white mb-2">TODOS LOS CÓDIGOS DE ACTIVACIÓN</h3>
+            <p className="text-white/80 text-sm">Segunda tabla - Lista completa de códigos</p>
           </div>
+          <div className="border-b-2 border-blue-300"></div>
         </div>
 
         {/* Tabla de Todos los Códigos - SIEMPRE VISIBLE */}
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-8 border-2 border-blue-300" id="segunda-tabla-codigos">
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-8 border-2 border-blue-300 mt-8" id="segunda-tabla-codigos" style={{ minHeight: '200px' }}>
           <div className="px-6 py-4 border-b-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <h2 className="text-2xl font-bold text-slate-900">
               📋 Todos los Códigos de Activación ({codigos.length} total)
