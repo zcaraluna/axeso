@@ -240,16 +240,45 @@ export async function desactivarDispositivo(dispositivoId: string): Promise<bool
 
 /**
  * Elimina permanentemente un código de activación
+ * Si el código está usado, también desactiva los dispositivos asociados
  */
-export async function eliminarCodigoActivacion(codigoId: string): Promise<boolean> {
+export async function eliminarCodigoActivacion(codigoId: string): Promise<{ success: boolean; dispositivosAfectados: number }> {
   try {
+    // Primero, obtener el código para verificar si está usado
+    const codigo = await prisma.codigoActivacion.findUnique({
+      where: { id: codigoId },
+      include: {
+        dispositivos: true,
+      },
+    });
+
+    if (!codigo) {
+      return { success: false, dispositivosAfectados: 0 };
+    }
+
+    // Si el código está usado y tiene dispositivos asociados, desactivarlos
+    let dispositivosAfectados = 0;
+    if (codigo.usado && codigo.dispositivos.length > 0) {
+      await prisma.dispositivoAutorizado.updateMany({
+        where: {
+          codigoActivacionId: codigoId,
+        },
+        data: {
+          activo: false,
+        },
+      });
+      dispositivosAfectados = codigo.dispositivos.length;
+    }
+
+    // Eliminar el código
     await prisma.codigoActivacion.delete({
       where: { id: codigoId },
     });
-    return true;
+
+    return { success: true, dispositivosAfectados };
   } catch (error) {
     console.error('Error eliminando código de activación:', error);
-    return false;
+    return { success: false, dispositivosAfectados: 0 };
   }
 }
 

@@ -186,11 +186,27 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    let resultado = false;
+    let resultado: any = false;
     if (tipo === 'dispositivo') {
       resultado = await eliminarDispositivo(id);
+      if (resultado) {
+        return NextResponse.json({ 
+          success: true,
+          mensaje: 'Dispositivo eliminado permanentemente. El usuario perderá acceso en su próxima verificación.'
+        });
+      }
     } else if (tipo === 'codigo') {
       resultado = await eliminarCodigoActivacion(id);
+      if (resultado.success) {
+        const mensaje = resultado.dispositivosAfectados > 0
+          ? `Código eliminado. ${resultado.dispositivosAfectados} dispositivo(s) asociado(s) fueron desactivado(s).`
+          : 'Código eliminado permanentemente.';
+        return NextResponse.json({ 
+          success: true,
+          dispositivosAfectados: resultado.dispositivosAfectados,
+          mensaje
+        });
+      }
     } else {
       return NextResponse.json(
         { error: 'Tipo inválido. Debe ser "dispositivo" o "codigo"' },
@@ -198,14 +214,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (resultado) {
-      return NextResponse.json({ success: true });
-    } else {
-      return NextResponse.json(
-        { error: 'Error al eliminar' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { error: 'Error al eliminar' },
+      { status: 500 }
+    );
   } catch (error) {
     console.error('Error eliminando:', error);
     return NextResponse.json(

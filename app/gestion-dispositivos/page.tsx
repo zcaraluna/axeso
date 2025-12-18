@@ -158,7 +158,11 @@ export default function GestionDispositivosPage() {
 
   const handleEliminar = async (tipo: 'dispositivo' | 'codigo', id: string, nombre?: string) => {
     const nombreTexto = nombre ? ` "${nombre}"` : '';
-    if (!confirm(`¿Estás seguro de ELIMINAR PERMANENTEMENTE este ${tipo}${nombreTexto}?\n\nEsta acción no se puede deshacer.`)) {
+    const mensajeAdvertencia = tipo === 'dispositivo'
+      ? `¿Estás seguro de ELIMINAR PERMANENTEMENTE este dispositivo${nombreTexto}?\n\nEl usuario perderá acceso inmediatamente en su próxima verificación.\n\nEsta acción no se puede deshacer.`
+      : `¿Estás seguro de ELIMINAR PERMANENTEMENTE este código${nombreTexto}?\n\nSi el código está en uso, los dispositivos asociados serán desactivados.\n\nEsta acción no se puede deshacer.`;
+    
+    if (!confirm(mensajeAdvertencia)) {
       return;
     }
 
@@ -172,14 +176,21 @@ export default function GestionDispositivosPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        // Mostrar mensaje de éxito con información adicional
+        if (data.mensaje) {
+          alert(`✅ ${data.mensaje}`);
+        } else {
+          alert(`✅ ${tipo === 'dispositivo' ? 'Dispositivo' : 'Código'} eliminado exitosamente`);
+        }
         loadData();
       } else {
         const error = await response.json();
-        alert(error.error || 'Error al eliminar');
+        alert(`❌ ${error.error || 'Error al eliminar'}`);
       }
     } catch (error) {
       console.error('Error eliminando:', error);
-      alert('Error al eliminar');
+      alert('❌ Error al eliminar');
     }
   };
 
