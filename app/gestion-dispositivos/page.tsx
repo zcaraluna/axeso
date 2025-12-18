@@ -118,7 +118,9 @@ export default function GestionDispositivosPage() {
       });
       
       setDispositivos(dispositivosRecibidos);
-      setCodigos(data.codigos || []);
+      const codigosRecibidos = data.codigos || [];
+      console.log('📋 Códigos recibidos para segunda tabla:', codigosRecibidos.length, codigosRecibidos);
+      setCodigos(codigosRecibidos);
     } catch (error) {
       console.error('Error cargando datos:', error);
       alert(`Error al cargar los datos: ${error instanceof Error ? error.message : 'Error desconocido'}\n\nPor favor, recarga la página o cierra sesión y vuelve a iniciar sesión.`);
@@ -209,7 +211,7 @@ export default function GestionDispositivosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-16" style={{ minHeight: '100vh' }}>
       <nav className="bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -228,7 +230,7 @@ export default function GestionDispositivosPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingBottom: '4rem' }}>
         {/* Alerta de código generado */}
         {codigoGenerado && (
           <div className="mb-6 bg-green-50 border-2 border-green-500 rounded-lg p-4">
@@ -534,15 +536,23 @@ export default function GestionDispositivosPage() {
           </div>
         </div>
 
-        {/* Separador visual */}
-        <div className="my-8 border-t-2 border-slate-300"></div>
+        {/* Separador visual prominente */}
+        <div className="my-12">
+          <div className="border-t-4 border-blue-500"></div>
+          <div className="text-center mt-4">
+            <h3 className="text-2xl font-bold text-white">TODOS LOS CÓDIGOS DE ACTIVACIÓN</h3>
+          </div>
+        </div>
 
-        {/* Tabla de Todos los Códigos */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800">
-              Todos los Códigos de Activación ({codigos.length} total)
+        {/* Tabla de Todos los Códigos - SIEMPRE VISIBLE */}
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-8 border-2 border-blue-300">
+          <div className="px-6 py-4 border-b-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h2 className="text-2xl font-bold text-slate-900">
+              📋 Todos los Códigos de Activación ({codigos.length} total)
             </h2>
+            <p className="text-sm text-slate-700 mt-2 font-medium">
+              Lista completa de todos los códigos generados, independientemente de su estado o dispositivo asociado
+            </p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
@@ -561,7 +571,10 @@ export default function GestionDispositivosPage() {
                 {codigos.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-4 text-center text-slate-700">
-                      No hay códigos de activación
+                      <div className="py-8">
+                        <p className="text-lg font-semibold mb-2">No hay códigos de activación</p>
+                        <p className="text-sm text-slate-500">Estado: {codigos.length} códigos en estado</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
