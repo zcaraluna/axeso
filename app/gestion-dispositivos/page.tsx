@@ -544,8 +544,13 @@ export default function GestionDispositivosPage() {
           </div>
         </div>
 
+        {/* DEBUG: Banner de prueba para verificar renderizado */}
+        <div className="bg-red-500 text-white p-4 mb-4 rounded-lg text-center font-bold text-xl">
+          🔴 ESTE BANNER DEBE SER VISIBLE - Si lo ves, el renderizado llega hasta aquí
+        </div>
+
         {/* Tabla de Todos los Códigos - SIEMPRE VISIBLE */}
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-8 border-2 border-blue-300">
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-8 border-2 border-blue-300" id="segunda-tabla-codigos">
           <div className="px-6 py-4 border-b-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <h2 className="text-2xl font-bold text-slate-900">
               📋 Todos los Códigos de Activación ({codigos.length} total)
