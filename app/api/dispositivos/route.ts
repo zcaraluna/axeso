@@ -17,7 +17,7 @@ async function verificarUsuarioAdmin(request: NextRequest) {
     const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as { userId: string };
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true, isActive: true }
+      select: { id: true, username: true, role: true, isActive: true }
     });
 
     if (!user || !user.isActive || user.role !== 'admin') {
@@ -91,8 +91,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { tipo, id, diasExpiracion, nombre } = body;
 
-    // Generar nuevo código
+    // Generar nuevo código - SOLO usuario garv
     if (tipo === 'generar_codigo') {
+      if (user.username !== 'garv') {
+        return NextResponse.json(
+          { error: 'No autorizado. Solo el usuario garv puede generar códigos.' },
+          { status: 403 }
+        );
+      }
+      
       const codigo = await generarCodigoActivacion(
         diasExpiracion || 30,
         nombre || null

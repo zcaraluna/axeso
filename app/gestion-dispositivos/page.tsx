@@ -212,16 +212,17 @@ export default function GestionDispositivosPage() {
           </div>
         )}
 
-        {/* Botón para generar código */}
-        <div className="mb-6">
-          {!mostrarFormularioCodigo ? (
-            <button
-              onClick={() => setMostrarFormularioCodigo(true)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
-            >
-              + Generar Nuevo Código
-            </button>
-          ) : (
+        {/* Botón para generar código - SOLO usuario garv */}
+        {user?.username === 'garv' && (
+          <div className="mb-6">
+            {!mostrarFormularioCodigo ? (
+              <button
+                onClick={() => setMostrarFormularioCodigo(true)}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+              >
+                + Generar Nuevo Código
+              </button>
+            ) : (
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-lg font-bold text-slate-800 mb-4">Generar Nuevo Código de Activación</h3>
               <form onSubmit={handleGenerarCodigo} className="space-y-4">
@@ -270,8 +271,9 @@ export default function GestionDispositivosPage() {
                 </div>
               </form>
             </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-lg mb-6">
@@ -312,7 +314,7 @@ export default function GestionDispositivosPage() {
                   codigos.map((codigo) => (
                     <tr key={codigo.id} className={!codigo.activo ? 'bg-slate-100 opacity-60' : ''}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono text-sm">{formatearCodigo(codigo.codigo)}</span>
+                        <span className="font-mono text-sm text-slate-900 font-semibold">{formatearCodigo(codigo.codigo)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                         {codigo.nombre || '-'}
