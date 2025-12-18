@@ -106,6 +106,7 @@ export async function validarCodigoActivacion(
 
 /**
  * Verifica si un dispositivo está autorizado
+ * También verifica si el código asociado ha expirado
  */
 export async function verificarDispositivoAutorizado(
   fingerprint: string
@@ -113,18 +114,47 @@ export async function verificarDispositivoAutorizado(
   try {
     const dispositivo = await prisma.dispositivoAutorizado.findUnique({
       where: { fingerprint },
+      include: {
+        codigoActivacion: true,
+      },
     });
 
-    if (dispositivo && dispositivo.activo) {
-      // Actualizar último acceso
-      await prisma.dispositivoAutorizado.update({
-        where: { id: dispositivo.id },
-        data: { ultimoAcceso: new Date() },
-      });
-      return true;
+    if (!dispositivo || !dispositivo.activo) {
+      return false;
     }
 
-    return false;
+    // Si el dispositivo tiene un código asociado, verificar si ha expirado
+    if (dispositivo.codigoActivacion) {
+      const codigo = dispositivo.codigoActivacion;
+      
+      // Verificar si el código ha expirado
+      if (codigo.expiraEn && new Date(codigo.expiraEn) < new Date()) {
+        // El código ha expirado, desactivar el dispositivo automáticamente
+        await prisma.dispositivoAutorizado.update({
+          where: { id: dispositivo.id },
+          data: { activo: false },
+        });
+        return false;
+      }
+
+      // Verificar si el código está activo
+      if (codigo.activo === false) {
+        // El código fue desactivado, desactivar el dispositivo también
+        await prisma.dispositivoAutorizado.update({
+          where: { id: dispositivo.id },
+          data: { activo: false },
+        });
+        return false;
+      }
+    }
+
+    // Actualizar último acceso
+    await prisma.dispositivoAutorizado.update({
+      where: { id: dispositivo.id },
+      data: { ultimoAcceso: new Date() },
+    });
+    
+    return true;
   } catch (error) {
     console.error('Error verificando dispositivo autorizado:', error);
     return false;

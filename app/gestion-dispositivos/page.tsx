@@ -56,7 +56,16 @@ export default function GestionDispositivosPage() {
 
     // Verificar que sea admin
     if (user.role !== 'admin') {
+      alert('No tienes permisos para acceder a esta página. Solo administradores pueden ver la gestión de dispositivos.');
       router.push('/dashboard');
+      return;
+    }
+
+    // Verificar que el token aún sea válido antes de cargar datos
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      router.push('/');
       return;
     }
 
@@ -78,7 +87,16 @@ export default function GestionDispositivosPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al cargar datos');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error en API:', response.status, errorData);
+        
+        if (response.status === 401 || response.status === 403) {
+          alert(`Error de autorización: ${errorData.error || 'No tienes permisos para ver esta información'}\n\nPor favor, cierra sesión y vuelve a iniciar sesión.`);
+          router.push('/');
+          return;
+        }
+        
+        throw new Error(errorData.error || 'Error al cargar datos');
       }
 
       const data = await response.json();
@@ -86,6 +104,7 @@ export default function GestionDispositivosPage() {
       setCodigos(data.codigos || []);
     } catch (error) {
       console.error('Error cargando datos:', error);
+      alert(`Error al cargar los datos: ${error instanceof Error ? error.message : 'Error desconocido'}\n\nPor favor, recarga la página o cierra sesión y vuelve a iniciar sesión.`);
     } finally {
       setLoading(false);
     }
@@ -324,109 +343,21 @@ export default function GestionDispositivosPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-lg mb-6">
-          <div className="border-b border-slate-200">
-            <nav className="flex -mb-px">
-              <button className="px-6 py-3 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
-                Códigos de Activación ({codigos.length})
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Tabla de Códigos */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800">Códigos de Activación</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Código</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Creado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Expira</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {codigos.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-slate-700">
-                      No hay códigos de activación
-                    </td>
-                  </tr>
-                ) : (
-                  codigos.map((codigo) => (
-                    <tr key={codigo.id} className={!codigo.activo ? 'bg-slate-100 opacity-60' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono text-sm text-slate-900 font-semibold">{formatearCodigo(codigo.codigo)}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {codigo.nombre || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {codigo.usado ? (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                            Usado
-                          </span>
-                        ) : codigo.esta_expirado ? (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                            Expirado
-                          </span>
-                        ) : !codigo.activo ? (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                            Desactivado
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                            Activo
-                            {codigo.dias_restantes !== null && (
-                              <span className="ml-1">({codigo.dias_restantes}d)</span>
-                            )}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
-                        {formatearFecha(codigo.creado_en)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
-                        {codigo.expira_en ? formatearFecha(codigo.expira_en) : 'Sin expiración'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {codigo.activo && !codigo.usado && (
-                          <button
-                            onClick={() => handleDesactivar('codigo', codigo.id)}
-                            className="text-red-600 hover:text-red-800 font-medium"
-                          >
-                            Desactivar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Tabla de Dispositivos */}
+        {/* Tabla Unificada de Dispositivos y Códigos */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800">Dispositivos Autorizados ({dispositivos.filter(d => d.activo).length} activos)</h2>
+            <h2 className="text-xl font-bold text-slate-800">
+              Dispositivos Autorizados ({dispositivos.filter(d => d.activo).length} activos)
+            </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">IP</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Autorizado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Último Acceso</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Código</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Fecha de Autorización</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Expiración</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -439,48 +370,114 @@ export default function GestionDispositivosPage() {
                     </td>
                   </tr>
                 ) : (
-                  dispositivos.map((dispositivo) => (
-                    <tr key={dispositivo.id} className={!dispositivo.activo ? 'bg-slate-100 opacity-60' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">
-                          {dispositivo.nombre || 'Sin nombre'}
-                        </div>
-                        <div className="text-xs text-slate-700 font-mono truncate max-w-xs">
-                          {dispositivo.fingerprint.substring(0, 16)}...
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
-                        {dispositivo.ip_address || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
-                        {formatearFecha(dispositivo.autorizado_en)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
-                        {formatearFecha(dispositivo.ultimo_acceso)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {dispositivo.activo ? (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                            Activo
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                            Desactivado
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {dispositivo.activo && (
-                          <button
-                            onClick={() => handleDesactivar('dispositivo', dispositivo.id)}
-                            className="text-red-600 hover:text-red-800 font-medium"
+                  dispositivos.map((dispositivo) => {
+                    // Buscar el código asociado a este dispositivo
+                    // Primero por fingerprint, luego por código
+                    const codigoAsociado = codigos.find(c => 
+                      c.dispositivo_fingerprint === dispositivo.fingerprint
+                    ) || codigos.find(c => 
+                      dispositivo.codigo_activacion && dispositivo.codigo_activacion === c.codigo
+                    );
+
+                    // Calcular días restantes si hay código asociado
+                    let diasRestantes = null;
+                    let fechaExpiracion = null;
+                    if (codigoAsociado && codigoAsociado.expira_en) {
+                      fechaExpiracion = new Date(codigoAsociado.expira_en);
+                      const ahora = new Date();
+                      const diferencia = fechaExpiracion.getTime() - ahora.getTime();
+                      diasRestantes = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+                    }
+
+                    // Formatear código (primeros 4 y últimos 4 caracteres)
+                    const codigoFormateado = codigoAsociado 
+                      ? `${codigoAsociado.codigo.substring(0, 4)}...${codigoAsociado.codigo.substring(codigoAsociado.codigo.length - 4)}`
+                      : '-';
+
+                    // Determinar estado
+                    let estado = 'Desactivado';
+                    let estadoColor = 'gray';
+                    if (dispositivo.activo) {
+                      if (codigoAsociado && codigoAsociado.esta_expirado) {
+                        estado = 'Expirado';
+                        estadoColor = 'orange';
+                      } else if (codigoAsociado && !codigoAsociado.activo) {
+                        estado = 'Código Desactivado';
+                        estadoColor = 'gray';
+                      } else {
+                        estado = 'Activo';
+                        estadoColor = 'green';
+                      }
+                    }
+
+                    return (
+                      <tr key={dispositivo.id} className={!dispositivo.activo ? 'bg-slate-100 opacity-60' : ''}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-slate-900">
+                            {dispositivo.nombre || codigoAsociado?.nombre || 'Sin nombre'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span 
+                            className="font-mono text-sm text-slate-900 font-semibold cursor-help relative group"
+                            title={codigoAsociado ? codigoAsociado.codigo : 'Sin código'}
                           >
-                            Desactivar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                            {codigoFormateado}
+                            {codigoAsociado && (
+                              <span className="absolute left-0 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                                {codigoAsociado.codigo}
+                                <span className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900"></span>
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
+                          {formatearFecha(dispositivo.autorizado_en)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
+                          {fechaExpiracion ? (
+                            <div>
+                              <div>{formatearFecha(fechaExpiracion.toISOString())}</div>
+                              {diasRestantes !== null && (
+                                <div className="text-xs text-slate-600">
+                                  ({diasRestantes > 0 ? `${diasRestantes} días restantes` : 'Expirado'})
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            'Sin expiración'
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {estadoColor === 'green' && (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              {estado}
+                            </span>
+                          )}
+                          {estadoColor === 'orange' && (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                              {estado}
+                            </span>
+                          )}
+                          {estadoColor === 'gray' && (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              {estado}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {dispositivo.activo && (
+                            <button
+                              onClick={() => handleDesactivar('dispositivo', dispositivo.id)}
+                              className="text-red-600 hover:text-red-800 font-medium"
+                            >
+                              Desactivar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

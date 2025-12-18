@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 async function verificarUsuarioAdmin(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.error('[API Dispositivos] No se encontró header de autorización');
     return null;
   }
 
@@ -20,12 +21,24 @@ async function verificarUsuarioAdmin(request: NextRequest) {
       select: { id: true, username: true, role: true, isActive: true }
     });
 
-    if (!user || !user.isActive || user.role !== 'admin') {
+    if (!user) {
+      console.error('[API Dispositivos] Usuario no encontrado:', decoded.userId);
+      return null;
+    }
+
+    if (!user.isActive) {
+      console.error('[API Dispositivos] Usuario inactivo:', user.username);
+      return null;
+    }
+
+    if (user.role !== 'admin') {
+      console.error('[API Dispositivos] Usuario no es admin:', user.username, 'rol:', user.role);
       return null;
     }
 
     return user;
-  } catch {
+  } catch (error) {
+    console.error('[API Dispositivos] Error verificando token:', error);
     return null;
   }
 }
