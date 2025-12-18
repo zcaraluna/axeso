@@ -119,7 +119,7 @@ export default function GestionDispositivosPage() {
       
       setDispositivos(dispositivosRecibidos);
       const codigosRecibidos = data.codigos || [];
-      console.log('📋 Códigos recibidos para segunda tabla:', codigosRecibidos.length, codigosRecibidos);
+      console.log('Códigos recibidos para segunda tabla:', codigosRecibidos.length, codigosRecibidos);
       setCodigos(codigosRecibidos);
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -179,18 +179,18 @@ export default function GestionDispositivosPage() {
         const data = await response.json();
         // Mostrar mensaje de éxito con información adicional
         if (data.mensaje) {
-          alert(`✅ ${data.mensaje}`);
+          alert(data.mensaje);
         } else {
-          alert(`✅ ${tipo === 'dispositivo' ? 'Dispositivo' : 'Código'} eliminado exitosamente`);
+          alert(`${tipo === 'dispositivo' ? 'Dispositivo' : 'Código'} eliminado exitosamente`);
         }
         loadData();
       } else {
         const error = await response.json();
-        alert(`❌ ${error.error || 'Error al eliminar'}`);
+        alert(error.error || 'Error al eliminar');
       }
     } catch (error) {
       console.error('Error eliminando:', error);
-      alert('❌ Error al eliminar');
+      alert('Error al eliminar');
     }
   };
 
@@ -280,9 +280,9 @@ export default function GestionDispositivosPage() {
               </div>
               <button
                 onClick={() => setCodigoGenerado(null)}
-                className="text-green-600 hover:text-green-800"
+                className="text-green-600 hover:text-green-800 font-bold text-xl"
               >
-                ✕
+                ×
               </button>
             </div>
           </div>
@@ -294,21 +294,13 @@ export default function GestionDispositivosPage() {
             {!mostrarFormularioCodigo ? (
               <button
                 onClick={() => setMostrarFormularioCodigo(true)}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
                 Generar Nuevo Código
               </button>
             ) : (
             <div className="bg-white rounded-xl shadow-xl p-8 border border-slate-200">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                </div>
+              <div className="mb-6">
                 <h3 className="text-2xl font-bold text-slate-900">Generar Nuevo Código de Activación</h3>
               </div>
               <form onSubmit={handleGenerarCodigo} className="space-y-6">
@@ -337,24 +329,20 @@ export default function GestionDispositivosPage() {
                       min="1"
                       className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-slate-900"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                       <button
                         type="button"
                         onClick={() => setNuevoCodigo({ ...nuevoCodigo, dias: nuevoCodigo.dias + 1 })}
-                        className="text-slate-400 hover:text-slate-600 transition"
+                        className="text-slate-400 hover:text-slate-600 transition text-sm font-bold"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
+                        +
                       </button>
                       <button
                         type="button"
                         onClick={() => setNuevoCodigo({ ...nuevoCodigo, dias: Math.max(1, nuevoCodigo.dias - 1) })}
-                        className="text-slate-400 hover:text-slate-600 transition"
+                        className="text-slate-400 hover:text-slate-600 transition text-sm font-bold"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        -
                       </button>
                     </div>
                   </div>
@@ -366,22 +354,7 @@ export default function GestionDispositivosPage() {
                     disabled={generandoCodigo}
                     className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 disabled:cursor-not-allowed"
                   >
-                    {generandoCodigo ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Generando...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Generar Código
-                      </>
-                    )}
+                    {generandoCodigo ? 'Generando...' : 'Generar Código'}
                   </button>
                   <button
                     type="button"
@@ -719,7 +692,7 @@ export default function GestionDispositivosPage() {
                             <div>
                               <div className="font-medium">{dispositivoAsociado.nombre || 'Sin nombre'}</div>
                               <div className="text-xs text-slate-600">
-                                {dispositivoAsociado.activo ? '✅ Activo' : '❌ Desactivado'}
+                                {dispositivoAsociado.activo ? 'Activo' : 'Desactivado'}
                               </div>
                             </div>
                           ) : codigo.usado ? (
