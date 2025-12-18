@@ -533,6 +533,160 @@ export default function GestionDispositivosPage() {
             </table>
           </div>
         </div>
+
+        {/* Tabla de Todos los Códigos */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h2 className="text-xl font-bold text-slate-800">
+              Todos los Códigos de Activación ({codigos.length} total)
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Código</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Creado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Expira</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Dispositivo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {codigos.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-slate-700">
+                      No hay códigos de activación
+                    </td>
+                  </tr>
+                ) : (
+                  codigos.map((codigo) => {
+                    // Buscar dispositivo asociado a este código
+                    let dispositivoAsociado = null;
+                    
+                    // 1. Buscar por código_activacion_id
+                    if (codigo.id) {
+                      dispositivoAsociado = dispositivos.find(d => 
+                        d.codigo_activacion_id === codigo.id
+                      );
+                    }
+                    
+                    // 2. Si no se encontró, buscar por código
+                    if (!dispositivoAsociado) {
+                      dispositivoAsociado = dispositivos.find(d => 
+                        d.codigo_activacion === codigo.codigo
+                      );
+                    }
+                    
+                    // 3. Si no se encontró, buscar por fingerprint
+                    if (!dispositivoAsociado && codigo.dispositivo_fingerprint) {
+                      dispositivoAsociado = dispositivos.find(d => 
+                        d.fingerprint === codigo.dispositivo_fingerprint
+                      );
+                    }
+
+                    // Calcular días restantes
+                    let diasRestantes = null;
+                    if (!codigo.usado && codigo.expira_en) {
+                      const fechaExpiracion = new Date(codigo.expira_en);
+                      const ahora = new Date();
+                      const diferencia = fechaExpiracion.getTime() - ahora.getTime();
+                      diasRestantes = Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+                    }
+
+                    // Formatear código (primeros 4 y últimos 4)
+                    const codigoFormateado = `${codigo.codigo.substring(0, 4)}...${codigo.codigo.substring(codigo.codigo.length - 4)}`;
+
+                    return (
+                      <tr key={codigo.id} className={!codigo.activo ? 'bg-slate-100 opacity-60' : ''}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span 
+                            className="font-mono text-sm text-slate-900 font-semibold cursor-help relative group"
+                            title={codigo.codigo}
+                          >
+                            {codigoFormateado}
+                            <span className="absolute left-0 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                              {codigo.codigo}
+                              <span className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900"></span>
+                            </span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                          {codigo.nombre || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {codigo.usado ? (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                              Usado
+                            </span>
+                          ) : codigo.esta_expirado ? (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                              Expirado
+                            </span>
+                          ) : !codigo.activo ? (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Desactivado
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              Activo
+                              {diasRestantes !== null && diasRestantes > 0 && (
+                                <span className="ml-1">({diasRestantes}d)</span>
+                              )}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
+                          {formatearFecha(codigo.creado_en)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
+                          {codigo.expira_en ? (
+                            <div>
+                              <div>{formatearFecha(codigo.expira_en)}</div>
+                              {diasRestantes !== null && (
+                                <div className="text-xs text-slate-600">
+                                  ({diasRestantes > 0 ? `${diasRestantes} días restantes` : 'Expirado'})
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            'Sin expiración'
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">
+                          {dispositivoAsociado ? (
+                            <div>
+                              <div className="font-medium">{dispositivoAsociado.nombre || 'Sin nombre'}</div>
+                              <div className="text-xs text-slate-600">
+                                {dispositivoAsociado.activo ? '✅ Activo' : '❌ Desactivado'}
+                              </div>
+                            </div>
+                          ) : codigo.usado ? (
+                            <span className="text-slate-500 text-xs">Sin dispositivo asociado</span>
+                          ) : (
+                            <span className="text-slate-500 text-xs">No usado</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {codigo.activo && !codigo.usado && (
+                            <button
+                              onClick={() => handleDesactivar('codigo', codigo.id)}
+                              className="text-red-600 hover:text-red-800 font-medium"
+                            >
+                              Desactivar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
