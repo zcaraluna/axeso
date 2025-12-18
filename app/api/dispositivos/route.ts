@@ -63,10 +63,10 @@ export async function GET(request: NextRequest) {
     console.log(`[API Dispositivos] Dispositivos obtenidos: ${dispositivos.length}`);
     console.log(`[API Dispositivos] Códigos obtenidos: ${codigos.length}`);
 
-    // Calcular días restantes para códigos no usados
+    // Calcular días restantes para todos los códigos (usados o no)
     const codigosConDiasRestantes = codigos.map((codigo: any) => {
       let diasRestantes = null;
-      if (!codigo.usado && codigo.expira_en) {
+      if (codigo.expira_en) {
         const fechaExpiracion = new Date(codigo.expira_en);
         const ahora = new Date();
         const diferencia = fechaExpiracion.getTime() - ahora.getTime();

@@ -534,8 +534,11 @@ export default function GestionDispositivosPage() {
           </div>
         </div>
 
+        {/* Separador visual */}
+        <div className="my-8 border-t-2 border-slate-300"></div>
+
         {/* Tabla de Todos los Códigos */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-8">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-bold text-slate-800">
               Todos los Códigos de Activación ({codigos.length} total)
@@ -587,9 +590,9 @@ export default function GestionDispositivosPage() {
                       );
                     }
 
-                    // Calcular días restantes
-                    let diasRestantes = null;
-                    if (!codigo.usado && codigo.expira_en) {
+                    // Calcular días restantes (siempre que haya fecha de expiración)
+                    let diasRestantes = codigo.dias_restantes;
+                    if (diasRestantes === null && codigo.expira_en) {
                       const fechaExpiracion = new Date(codigo.expira_en);
                       const ahora = new Date();
                       const diferencia = fechaExpiracion.getTime() - ahora.getTime();
