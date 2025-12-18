@@ -8,21 +8,22 @@ datasource db {
 }
 
 model User {
-  id                 String           @id @default(cuid())
-  username           String           @unique
+  id                 String             @id @default(cuid())
+  username           String             @unique
   password           String
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  apellidos          String           @default("")
-  cedula             String?          @unique
-  credencial         String           @default("")
-  grado              String           @default("FUNCIONARIO/A")
-  nombres            String           @default("")
-  role               String           @default("user")
-  telefono           String           @default("")
-  mustChangePassword Boolean          @default(true)
-  isActive           Boolean          @default(true) // Indica si el usuario puede acceder al sistema
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  apellidos          String             @default("")
+  cedula             String?            @unique
+  credencial         String             @default("")
+  grado              String             @default("FUNCIONARIO/A")
+  nombres            String             @default("")
+  role               String             @default("user")
+  telefono           String             @default("")
+  mustChangePassword Boolean            @default(true)
+  isActive           Boolean            @default(true) // Indica si el usuario puede acceder al sistema
   visits             Visit[]
+  codigosActivacion  CodigoActivacion[]
 
   @@map("users")
 }
@@ -49,4 +50,43 @@ model Visit {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("visits")
+}
+
+model CodigoActivacion {
+  id                     String                  @id @default(cuid())
+  codigo                 String                  @unique
+  usado                  Boolean                 @default(false)
+  usadoEn                DateTime?
+  dispositivoFingerprint String?
+  creadoEn               DateTime                @default(now())
+  creadoPor              String?
+  expiraEn               DateTime?
+  nombre                 String?
+  activo                 Boolean                 @default(true)
+  user                   User?                   @relation(fields: [creadoPor], references: [id], onDelete: SetNull)
+  dispositivos           DispositivoAutorizado[]
+
+  @@index([codigo])
+  @@index([usado])
+  @@index([activo])
+  @@index([nombre])
+  @@map("codigos_activacion")
+}
+
+model DispositivoAutorizado {
+  id                 String            @id @default(cuid())
+  fingerprint        String            @unique
+  userAgent          String?
+  ipAddress          String?
+  codigoActivacionId String?
+  autorizadoEn       DateTime          @default(now())
+  ultimoAcceso       DateTime          @default(now())
+  activo             Boolean           @default(true)
+  nombre             String?
+  codigoActivacion   CodigoActivacion? @relation(fields: [codigoActivacionId], references: [id], onDelete: SetNull)
+
+  @@index([fingerprint])
+  @@index([activo])
+  @@index([ultimoAcceso])
+  @@map("dispositivos_autorizados")
 }
