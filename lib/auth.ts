@@ -2,10 +2,25 @@ import { prisma } from './prisma';
 import crypto from 'crypto';
 
 /**
- * Genera un fingerprint único para un dispositivo basado en user agent
+ * Genera un fingerprint único para un dispositivo basado en múltiples factores
+ * Incluye: user agent, accept-language, accept-encoding, y otros headers disponibles
  */
-export function generarFingerprint(userAgent: string): string {
-  return crypto.createHash('sha256').update(userAgent).digest('hex');
+export function generarFingerprint(
+  userAgent: string, 
+  acceptLanguage?: string,
+  acceptEncoding?: string,
+  ipAddress?: string
+): string {
+  // Combinar múltiples factores para hacer el fingerprint más único
+  const factors = [
+    userAgent,
+    acceptLanguage || '',
+    acceptEncoding || '',
+    // Incluir IP como factor adicional (aunque puede cambiar, ayuda a diferenciar)
+    ipAddress || '',
+  ].join('|');
+  
+  return crypto.createHash('sha256').update(factors).digest('hex');
 }
 
 /**

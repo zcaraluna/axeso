@@ -46,13 +46,24 @@ export default function AutenticarPage() {
     setLoading(true)
 
     try {
+      // Obtener información adicional del navegador para hacer el fingerprint más único
+      const browserInfo = {
+        codigo: codigo.trim().toUpperCase(),
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language,
+        platform: navigator.platform,
+        hardwareConcurrency: navigator.hardwareConcurrency || 0,
+      };
+
       const response = await fetch('/api/autenticar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ codigo: codigo.trim().toUpperCase() }),
+        body: JSON.stringify(browserInfo),
       })
 
       const data = await response.json()

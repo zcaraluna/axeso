@@ -63,6 +63,24 @@ async function verificarDispositivos() {
       console.log(`\n⚠️  Códigos usados sin dispositivo asociado: ${codigosSinDispositivo.length}`);
       codigosSinDispositivo.forEach(c => {
         console.log(`  - Código: ${c.codigo}, Nombre: ${c.nombre || 'Sin nombre'}, Fingerprint: ${c.dispositivoFingerprint || 'N/A'}`);
+        
+        // Buscar si hay un dispositivo con ese fingerprint
+        if (c.dispositivoFingerprint) {
+          const dispositivoConFingerprint = dispositivos.find(d => d.fingerprint === c.dispositivoFingerprint);
+          if (dispositivoConFingerprint) {
+            console.log(`    → ⚠️  Existe un dispositivo con este fingerprint pero no está asociado!`);
+            console.log(`    → Dispositivo ID: ${dispositivoConFingerprint.id}, Nombre: ${dispositivoConFingerprint.nombre}`);
+          }
+        }
+      });
+    }
+
+    // Verificar si hay dispositivos desactivados que podrían ser el "tercero"
+    const dispositivosDesactivados = dispositivos.filter(d => !d.activo);
+    if (dispositivosDesactivados.length > 0) {
+      console.log(`\n📋 Dispositivos desactivados: ${dispositivosDesactivados.length}`);
+      dispositivosDesactivados.forEach(d => {
+        console.log(`  - ${d.nombre || 'Sin nombre'} (ID: ${d.id})`);
       });
     }
 
