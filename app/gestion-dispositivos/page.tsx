@@ -156,6 +156,33 @@ export default function GestionDispositivosPage() {
     }
   };
 
+  const handleEliminar = async (tipo: 'dispositivo' | 'codigo', id: string, nombre?: string) => {
+    const nombreTexto = nombre ? ` "${nombre}"` : '';
+    if (!confirm(`¿Estás seguro de ELIMINAR PERMANENTEMENTE este ${tipo}${nombreTexto}?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/dispositivos?tipo=${tipo}&id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        loadData();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Error al eliminar');
+      }
+    } catch (error) {
+      console.error('Error eliminando:', error);
+      alert('Error al eliminar');
+    }
+  };
+
   const handleGenerarCodigo = async (e: React.FormEvent) => {
     e.preventDefault();
     setGenerandoCodigo(true);
@@ -518,14 +545,24 @@ export default function GestionDispositivosPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {dispositivo.activo && (
+                          <div className="flex gap-2">
+                            {dispositivo.activo && (
+                              <button
+                                onClick={() => handleDesactivar('dispositivo', dispositivo.id)}
+                                className="text-orange-600 hover:text-orange-800 font-medium"
+                                title="Desactivar dispositivo"
+                              >
+                                Desactivar
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleDesactivar('dispositivo', dispositivo.id)}
+                              onClick={() => handleEliminar('dispositivo', dispositivo.id, dispositivo.nombre || undefined)}
                               className="text-red-600 hover:text-red-800 font-medium"
+                              title="Eliminar permanentemente"
                             >
-                              Desactivar
+                              Eliminar
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -536,26 +573,16 @@ export default function GestionDispositivosPage() {
           </div>
         </div>
 
-        {/* Separador visual prominente */}
-        <div className="my-12">
-          <div className="border-t-4 border-blue-500"></div>
-          <div className="text-center mt-4">
-            <h3 className="text-2xl font-bold text-white">TODOS LOS CÓDIGOS DE ACTIVACIÓN</h3>
-          </div>
-        </div>
+        {/* Separador visual sutil */}
+        <div className="my-8 border-t border-slate-300"></div>
 
-        {/* DEBUG: Banner de prueba para verificar renderizado */}
-        <div className="bg-red-500 text-white p-4 mb-4 rounded-lg text-center font-bold text-xl">
-          🔴 ESTE BANNER DEBE SER VISIBLE - Si lo ves, el renderizado llega hasta aquí
-        </div>
-
-        {/* Tabla de Todos los Códigos - SIEMPRE VISIBLE */}
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-8 border-2 border-blue-300" id="segunda-tabla-codigos">
-          <div className="px-6 py-4 border-b-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <h2 className="text-2xl font-bold text-slate-900">
-              📋 Todos los Códigos de Activación ({codigos.length} total)
+        {/* Tabla de Todos los Códigos */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8" id="segunda-tabla-codigos">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h2 className="text-xl font-bold text-slate-800">
+              Todos los Códigos de Activación ({codigos.length} total)
             </h2>
-            <p className="text-sm text-slate-700 mt-2 font-medium">
+            <p className="text-sm text-slate-600 mt-1">
               Lista completa de todos los códigos generados, independientemente de su estado o dispositivo asociado
             </p>
           </div>
@@ -691,14 +718,24 @@ export default function GestionDispositivosPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {codigo.activo && !codigo.usado && (
+                          <div className="flex gap-2">
+                            {codigo.activo && !codigo.usado && (
+                              <button
+                                onClick={() => handleDesactivar('codigo', codigo.id)}
+                                className="text-orange-600 hover:text-orange-800 font-medium"
+                                title="Desactivar código"
+                              >
+                                Desactivar
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleDesactivar('codigo', codigo.id)}
+                              onClick={() => handleEliminar('codigo', codigo.id, codigo.nombre || undefined)}
                               className="text-red-600 hover:text-red-800 font-medium"
+                              title="Eliminar permanentemente"
                             >
-                              Desactivar
+                              Eliminar
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );

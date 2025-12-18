@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obtenerDispositivosAutorizados, obtenerCodigosActivacion, desactivarDispositivo, desactivarCodigoActivacion, generarCodigoActivacion } from '@/lib/auth';
+import { obtenerDispositivosAutorizados, obtenerCodigosActivacion, desactivarDispositivo, desactivarCodigoActivacion, generarCodigoActivacion, eliminarDispositivo, eliminarCodigoActivacion } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
@@ -156,6 +156,58 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Error procesando solicitud:', error);
+    return NextResponse.json(
+      { error: 'Error del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Eliminar permanentemente dispositivo o código
+export async function DELETE(request: NextRequest) {
+  try {
+    // Verificar autenticación y que sea admin
+    const user = await verificarUsuarioAdmin(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'No autorizado. Solo administradores pueden acceder.' },
+        { status: 403 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const tipo = searchParams.get('tipo');
+    const id = searchParams.get('id');
+
+    if (!tipo || !id) {
+      return NextResponse.json(
+        { error: 'Tipo e ID son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    let resultado = false;
+    if (tipo === 'dispositivo') {
+      resultado = await eliminarDispositivo(id);
+    } else if (tipo === 'codigo') {
+      resultado = await eliminarCodigoActivacion(id);
+    } else {
+      return NextResponse.json(
+        { error: 'Tipo inválido. Debe ser "dispositivo" o "codigo"' },
+        { status: 400 }
+      );
+    }
+
+    if (resultado) {
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json(
+        { error: 'Error al eliminar' },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error('Error eliminando:', error);
     return NextResponse.json(
       { error: 'Error del servidor' },
       { status: 500 }

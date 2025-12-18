@@ -239,6 +239,36 @@ export async function desactivarDispositivo(dispositivoId: string): Promise<bool
 }
 
 /**
+ * Elimina permanentemente un código de activación
+ */
+export async function eliminarCodigoActivacion(codigoId: string): Promise<boolean> {
+  try {
+    await prisma.codigoActivacion.delete({
+      where: { id: codigoId },
+    });
+    return true;
+  } catch (error) {
+    console.error('Error eliminando código de activación:', error);
+    return false;
+  }
+}
+
+/**
+ * Elimina permanentemente un dispositivo autorizado
+ */
+export async function eliminarDispositivo(dispositivoId: string): Promise<boolean> {
+  try {
+    await prisma.dispositivoAutorizado.delete({
+      where: { id: dispositivoId },
+    });
+    return true;
+  } catch (error) {
+    console.error('Error eliminando dispositivo:', error);
+    return false;
+  }
+}
+
+/**
  * Obtiene todos los dispositivos autorizados
  */
 export async function obtenerDispositivosAutorizados() {
