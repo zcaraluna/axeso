@@ -228,6 +228,7 @@ export async function desactivarDispositivo(dispositivoId: string): Promise<bool
  */
 export async function obtenerDispositivosAutorizados() {
   try {
+    // Obtener TODOS los dispositivos sin ningún filtro
     const dispositivos = await prisma.dispositivoAutorizado.findMany({
       include: {
         codigoActivacion: true,
@@ -237,7 +238,19 @@ export async function obtenerDispositivosAutorizados() {
       },
     });
 
-    console.log(`[obtenerDispositivosAutorizados] Total dispositivos encontrados: ${dispositivos.length}`);
+    console.log(`[obtenerDispositivosAutorizados] Total dispositivos encontrados en BD: ${dispositivos.length}`);
+    
+    // Log de cada dispositivo para debug
+    dispositivos.forEach((d, index) => {
+      console.log(`[obtenerDispositivosAutorizados] Dispositivo ${index + 1}:`, {
+        id: d.id,
+        fingerprint: d.fingerprint.substring(0, 16) + '...',
+        nombre: d.nombre,
+        activo: d.activo,
+        codigoActivacionId: d.codigoActivacionId,
+        codigo: d.codigoActivacion?.codigo || 'sin código'
+      });
+    });
 
     return dispositivos.map(d => {
       const dispositivo = {

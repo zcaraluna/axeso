@@ -60,6 +60,9 @@ export async function GET(request: NextRequest) {
       obtenerCodigosActivacion(),
     ]);
 
+    console.log(`[API Dispositivos] Dispositivos obtenidos: ${dispositivos.length}`);
+    console.log(`[API Dispositivos] Códigos obtenidos: ${codigos.length}`);
+
     // Calcular días restantes para códigos no usados
     const codigosConDiasRestantes = codigos.map((codigo: any) => {
       let diasRestantes = null;

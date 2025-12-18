@@ -103,7 +103,21 @@ export default function GestionDispositivosPage() {
       const data = await response.json();
       console.log('Dispositivos recibidos:', data.dispositivos?.length || 0, data.dispositivos);
       console.log('Códigos recibidos:', data.codigos?.length || 0, data.codigos);
-      setDispositivos(data.dispositivos || []);
+      
+      // Verificar que todos los dispositivos se estén guardando
+      const dispositivosRecibidos = data.dispositivos || [];
+      console.log('Total dispositivos a mostrar:', dispositivosRecibidos.length);
+      dispositivosRecibidos.forEach((d: Dispositivo, index: number) => {
+        console.log(`Dispositivo ${index + 1}:`, {
+          id: d.id,
+          nombre: d.nombre,
+          activo: d.activo,
+          fingerprint: d.fingerprint.substring(0, 16) + '...',
+          codigo_activacion: d.codigo_activacion || 'sin código'
+        });
+      });
+      
+      setDispositivos(dispositivosRecibidos);
       setCodigos(data.codigos || []);
     } catch (error) {
       console.error('Error cargando datos:', error);
