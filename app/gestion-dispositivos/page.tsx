@@ -16,6 +16,7 @@ interface Dispositivo {
   ultimo_acceso: string;
   activo: boolean;
   codigo_activacion: string | null;
+  codigo_activacion_id: string | null;
   codigo_usado: boolean;
   codigo_expira_en: string | null;
   codigo_activo: boolean;
@@ -100,6 +101,8 @@ export default function GestionDispositivosPage() {
       }
 
       const data = await response.json();
+      console.log('Dispositivos recibidos:', data.dispositivos?.length || 0, data.dispositivos);
+      console.log('Códigos recibidos:', data.codigos?.length || 0, data.codigos);
       setDispositivos(data.dispositivos || []);
       setCodigos(data.codigos || []);
     } catch (error) {
@@ -347,7 +350,7 @@ export default function GestionDispositivosPage() {
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-bold text-slate-800">
-              Dispositivos Autorizados ({dispositivos.filter(d => d.activo).length} activos)
+              Dispositivos Autorizados ({dispositivos.length} total, {dispositivos.filter(d => d.activo).length} activos)
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -372,12 +375,35 @@ export default function GestionDispositivosPage() {
                 ) : (
                   dispositivos.map((dispositivo) => {
                     // Buscar el código asociado a este dispositivo
-                    // Primero por fingerprint, luego por código
-                    const codigoAsociado = codigos.find(c => 
+                    // 1. Por fingerprint en el código (relación directa)
+                    let codigoAsociado = codigos.find(c => 
                       c.dispositivo_fingerprint === dispositivo.fingerprint
-                    ) || codigos.find(c => 
-                      dispositivo.codigo_activacion && dispositivo.codigo_activacion === c.codigo
                     );
+                    
+                    // 2. Si no se encontró, buscar por código en el dispositivo
+                    if (!codigoAsociado && dispositivo.codigo_activacion) {
+                      codigoAsociado = codigos.find(c => 
+                        c.codigo === dispositivo.codigo_activacion
+                      );
+                    }
+                    
+                    // 3. Si aún no se encontró, buscar por ID del código (si existe)
+                    if (!codigoAsociado && dispositivo.codigo_activacion_id) {
+                      codigoAsociado = codigos.find(c => 
+                        c.id === dispositivo.codigo_activacion_id
+                      );
+                    }
+                    
+                    // Debug: log si no se encuentra código (solo en desarrollo)
+                    if (!codigoAsociado && process.env.NODE_ENV === 'development') {
+                      console.log('Dispositivo sin código asociado:', {
+                        id: dispositivo.id,
+                        fingerprint: dispositivo.fingerprint,
+                        codigo_activacion: dispositivo.codigo_activacion,
+                        codigo_activacion_id: dispositivo.codigo_activacion_id,
+                        nombre: dispositivo.nombre
+                      });
+                    }
 
                     // Calcular días restantes si hay código asociado
                     let diasRestantes = null;

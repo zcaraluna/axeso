@@ -237,20 +237,29 @@ export async function obtenerDispositivosAutorizados() {
       },
     });
 
-    return dispositivos.map(d => ({
-      id: d.id,
-      fingerprint: d.fingerprint,
-      nombre: d.nombre,
-      user_agent: d.userAgent,
-      ip_address: d.ipAddress,
-      autorizado_en: d.autorizadoEn,
-      ultimo_acceso: d.ultimoAcceso,
-      activo: d.activo,
-      codigo_activacion: d.codigoActivacion?.codigo || null,
-      codigo_usado: d.codigoActivacion?.usado || false,
-      codigo_expira_en: d.codigoActivacion?.expiraEn || null,
-      codigo_activo: d.codigoActivacion?.activo ?? true,
-    }));
+    console.log(`[obtenerDispositivosAutorizados] Total dispositivos encontrados: ${dispositivos.length}`);
+
+    return dispositivos.map(d => {
+      const dispositivo = {
+        id: d.id,
+        fingerprint: d.fingerprint,
+        nombre: d.nombre,
+        user_agent: d.userAgent,
+        ip_address: d.ipAddress,
+        autorizado_en: d.autorizadoEn,
+        ultimo_acceso: d.ultimoAcceso,
+        activo: d.activo,
+        codigo_activacion: d.codigoActivacion?.codigo || null,
+        codigo_activacion_id: d.codigoActivacionId || null,
+        codigo_usado: d.codigoActivacion?.usado || false,
+        codigo_expira_en: d.codigoActivacion?.expiraEn || null,
+        codigo_activo: d.codigoActivacion?.activo ?? true,
+      };
+      
+      console.log(`[obtenerDispositivosAutorizados] Dispositivo: ${dispositivo.id}, activo: ${dispositivo.activo}, código: ${dispositivo.codigo_activacion || 'sin código'}`);
+      
+      return dispositivo;
+    });
   } catch (error) {
     console.error('Error obteniendo dispositivos autorizados:', error);
     throw error;
