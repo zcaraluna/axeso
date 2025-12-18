@@ -1,21 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { obtenerDispositivosAutorizados, obtenerCodigosActivacion, desactivarDispositivo, desactivarCodigoActivacion, generarCodigoActivacion } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+
+/**
+ * Verificar token y obtener usuario con rol
+ */
+async function verificarUsuarioAdmin(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as { userId: string };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true, isActive: true }
+    });
+
+    if (!user || !user.isActive || user.role !== 'admin') {
+      return null;
+    }
+
+    return user;
+  } catch {
+    return null;
+  }
+}
 
 // GET: Obtener todos los dispositivos y códigos
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticación mediante token
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Verificar autenticación y que sea admin
+    const user = await verificarUsuarioAdmin(request);
+    if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado. Token requerido.' },
-        { status: 401 }
+        { error: 'No autorizado. Solo administradores pueden acceder.' },
+        { status: 403 }
       );
     }
-
-    // TODO: Verificar que el usuario sea superadmin
-    // Por ahora, cualquier usuario autenticado puede acceder
-    // Puedes agregar verificación de rol aquí
 
     const [dispositivos, codigos] = await Promise.all([
       obtenerDispositivosAutorizados(),
@@ -54,11 +79,12 @@ export async function GET(request: NextRequest) {
 // POST: Desactivar dispositivo o código, o generar nuevo código
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Verificar autenticación y que sea admin
+    const user = await verificarUsuarioAdmin(request);
+    if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado. Token requerido.' },
-        { status: 401 }
+        { error: 'No autorizado. Solo administradores pueden acceder.' },
+        { status: 403 }
       );
     }
 
