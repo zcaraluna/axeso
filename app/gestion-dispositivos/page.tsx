@@ -101,25 +101,10 @@ export default function GestionDispositivosPage() {
       }
 
       const data = await response.json();
-      console.log('Dispositivos recibidos:', data.dispositivos?.length || 0, data.dispositivos);
-      console.log('Códigos recibidos:', data.codigos?.length || 0, data.codigos);
       
-      // Verificar que todos los dispositivos se estén guardando
       const dispositivosRecibidos = data.dispositivos || [];
-      console.log('Total dispositivos a mostrar:', dispositivosRecibidos.length);
-      dispositivosRecibidos.forEach((d: Dispositivo, index: number) => {
-        console.log(`Dispositivo ${index + 1}:`, {
-          id: d.id,
-          nombre: d.nombre,
-          activo: d.activo,
-          fingerprint: d.fingerprint.substring(0, 16) + '...',
-          codigo_activacion: d.codigo_activacion || 'sin código'
-        });
-      });
-      
       setDispositivos(dispositivosRecibidos);
       const codigosRecibidos = data.codigos || [];
-      console.log('📋 Códigos recibidos para segunda tabla:', codigosRecibidos.length, codigosRecibidos);
       setCodigos(codigosRecibidos);
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -419,17 +404,6 @@ export default function GestionDispositivosPage() {
                         codigoAsociado = codigosConFingerprint[0];
                       }
                     }
-                    
-                    // Debug: log si no se encuentra código
-                    if (!codigoAsociado) {
-                      console.log('⚠️ Dispositivo sin código asociado:', {
-                        id: dispositivo.id,
-                        fingerprint: dispositivo.fingerprint.substring(0, 16) + '...',
-                        codigo_activacion: dispositivo.codigo_activacion,
-                        codigo_activacion_id: dispositivo.codigo_activacion_id,
-                        nombre: dispositivo.nombre
-                      });
-                    }
 
                     // Calcular días restantes si hay código asociado
                     let diasRestantes = null;
@@ -542,11 +516,6 @@ export default function GestionDispositivosPage() {
           <div className="text-center mt-4">
             <h3 className="text-2xl font-bold text-white">TODOS LOS CÓDIGOS DE ACTIVACIÓN</h3>
           </div>
-        </div>
-
-        {/* DEBUG: Banner de prueba para verificar renderizado */}
-        <div className="bg-red-500 text-white p-4 mb-4 rounded-lg text-center font-bold text-xl">
-          🔴 ESTE BANNER DEBE SER VISIBLE - Si lo ves, el renderizado llega hasta aquí
         </div>
 
         {/* Tabla de Todos los Códigos - SIEMPRE VISIBLE */}
