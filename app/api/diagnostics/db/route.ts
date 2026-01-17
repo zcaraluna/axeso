@@ -29,7 +29,7 @@ export async function GET(request: Request) {
                 hasIsActiveField: false,
                 userCount: 0,
                 visitCount: 0,
-                recentVisit: null,
+                recentVisit: null as any,
             }
         }
 
