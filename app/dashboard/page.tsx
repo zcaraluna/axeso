@@ -211,6 +211,50 @@ export default function Dashboard() {
                   </p>
                 </div>
               </Link>
+              {user?.username === 'garv' && (
+                <button
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    if (!confirm('¿Desea descargar una copia de seguridad completa de la base de datos?')) return;
+
+                    try {
+                      const res = await apiClient.getBackup();
+                      if (res.data && res.data.blob) {
+                        const url = window.URL.createObjectURL(res.data.blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = res.data.fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } else if (res.error) {
+                        alert(res.error);
+                      }
+                    } catch (error) {
+                      console.error('Error downloading backup:', error);
+                      alert('Error al descargar la copia de seguridad');
+                    }
+                  }}
+                  className="block text-left group"
+                >
+                  <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-all duration-200 border-2 border-transparent hover:border-emerald-500 h-full">
+                    <div className="flex items-center mb-3">
+                      <div className="w-6 h-6 mr-3 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-slate-800 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="Drawing: M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                      </div>
+                      <h2 className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition">
+                        Copia de Seguridad
+                      </h2>
+                    </div>
+                    <p className="text-slate-600">
+                      Descargar respaldo completo de la base de datos (SQL)
+                    </p>
+                  </div>
+                </button>
+              )}
             </>
           )}
         </div>

@@ -117,6 +117,31 @@ class ApiClient {
       body: JSON.stringify({ isActive }),
     });
   }
+
+  // Admin Backup API
+  async getBackup() {
+    try {
+      const url = `${API_BASE}/admin/backup`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { error: errorData.error || 'Error al descargar el backup' };
+      }
+
+      const blob = await response.blob();
+      const fileName = response.headers.get('Content-Disposition')?.split('filename="')[1]?.split('"')[0] || 'backup.sql';
+
+      return { data: { blob, fileName } };
+    } catch (error) {
+      console.error('API backup error:', error);
+      return { error: 'Error de conexión' };
+    }
+  }
 }
 
 export const apiClient = new ApiClient();
