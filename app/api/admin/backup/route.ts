@@ -10,20 +10,29 @@ export const dynamic = 'force-dynamic';
 async function getUsernameFromToken(request: NextRequest): Promise<string | null> {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('[Backup API] No auth header or invalid format');
         return null;
     }
 
     const token = authHeader.substring(7);
     try {
-        const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as { userId: string };
+        const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as { userId: string, username?: string };
+        console.log('[Backup API] Token decodificado:', { userId: decoded.userId, username: decoded.username });
 
+        if (decoded.username) {
+            return decoded.username.toLowerCase();
+        }
+
+        // Fallback: Buscar en DB si no está en el token
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
             select: { username: true }
         });
 
-        return user?.username || null;
-    } catch {
+        console.log('[Backup API] Usuario encontrado en DB:', user?.username);
+        return user?.username?.toLowerCase() || null;
+    } catch (error) {
+        console.error('[Backup API] Error verificando token:', error);
         return null;
     }
 }
@@ -44,12 +53,17 @@ function escapeSqlValue(value: any): string {
 
 export async function GET(request: NextRequest) {
     try {
+        console.log('[Backup API] Iniciando proceso de backup...');
         // 1. Verificar que el usuario sea "garv"
         const username = await getUsernameFromToken(request);
+        console.log('[Backup API] Username detectado:', username);
 
         if (username !== 'garv') {
             return NextResponse.json(
-                { error: 'No tienes permisos para realizar esta acción. Solo el usuario "garv" puede realizar copias de seguridad.' },
+                {
+                    error: `No tienes permisos para realizar esta acción. Usuario detectado: "${username}". Solo el usuario "garv" puede realizar copias de seguridad.`,
+                    debug: { detected: username }
+                },
                 { status: 403 }
             );
         }
