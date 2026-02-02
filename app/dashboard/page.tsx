@@ -215,35 +215,27 @@ export default function Dashboard() {
                 <button
                   onClick={async (e) => {
                     e.preventDefault();
-                    console.log('🟢 Botón de backup presionado - Sin Confirmación');
-                    console.log('👤 Usuario actual:', user?.username);
+                    if (!confirm('¿Desea descargar una copia de seguridad completa de la base de datos (SQL)?')) return;
 
                     try {
-                      console.log('📡 Iniciando solicitud de backup...');
                       const res = await apiClient.getBackup();
-                      console.log('📥 Respuesta recibida de apiClient:', res);
-
                       if (res.data && res.data.blob) {
-                        console.log('✅ Archivo recibido correctamente. Tamaño:', res.data.blob.size);
                         const url = window.URL.createObjectURL(res.data.blob);
                         const a = document.createElement('a');
                         a.href = url;
                         a.download = res.data.fileName;
                         document.body.appendChild(a);
                         a.click();
-                        console.log('📥 Click de descarga simulado');
 
                         setTimeout(() => {
                           window.URL.revokeObjectURL(url);
                           document.body.removeChild(a);
-                          console.log('🧹 Limpieza de recursos completada');
                         }, 100);
                       } else if (res.error) {
-                        console.error('❌ Error reportado por el cliente API:', res.error);
                         alert(res.error);
                       }
                     } catch (error) {
-                      console.error('💥 Error fatal en el bloque catch del dashboard:', error);
+                      console.error('Error downloading backup:', error);
                       alert('Error al descargar la copia de seguridad');
                     }
                   }}

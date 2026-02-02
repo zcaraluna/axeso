@@ -122,32 +122,23 @@ class ApiClient {
   async getBackup() {
     try {
       const url = `${API_BASE}/admin/backup`;
-      console.log(`[ApiClient] Solicitando backup a: ${url}`);
-
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${this.token}`,
         },
       });
 
-      console.log(`[ApiClient] Status respuesta: ${response.status}`);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('[ApiClient] Error respuesta no ok:', errorData);
         return { error: errorData.error || 'Error al descargar el backup' };
       }
 
-      console.log('[ApiClient] Procesando blob...');
       const blob = await response.blob();
-      console.log(`[ApiClient] Tamaño blob: ${blob.size} bytes`);
-
       const fileName = response.headers.get('Content-Disposition')?.split('filename="')[1]?.split('"')[0] || 'backup.sql';
-      console.log(`[ApiClient] Nombre archivo: ${fileName}`);
 
       return { data: { blob, fileName } };
     } catch (error) {
-      console.error('[ApiClient] Error crítico:', error);
+      console.error('API backup error:', error);
       return { error: 'Error de conexión' };
     }
   }
