@@ -215,11 +215,21 @@ export default function Dashboard() {
                 <button
                   onClick={async (e) => {
                     e.preventDefault();
-                    if (!confirm('¿Desea descargar una copia de seguridad completa de la base de datos?')) return;
+                    console.log('🟢 Botón de backup presionado');
+                    console.log('👤 Usuario actual:', user?.username);
+
+                    if (!confirm('¿Desea descargar una copia de seguridad completa de la base de datos?')) {
+                      console.log('❌ Backup cancelado por el usuario');
+                      return;
+                    }
 
                     try {
+                      console.log('📡 Iniciando solicitud de backup...');
                       const res = await apiClient.getBackup();
+                      console.log('📥 Respuesta recibida:', res);
+
                       if (res.data && res.data.blob) {
+                        console.log('✅ Archivo recibido correctamente. Iniciando descarga...');
                         const url = window.URL.createObjectURL(res.data.blob);
                         const a = document.createElement('a');
                         a.href = url;
@@ -229,10 +239,11 @@ export default function Dashboard() {
                         window.URL.revokeObjectURL(url);
                         document.body.removeChild(a);
                       } else if (res.error) {
+                        console.error('❌ Error en el objeto de respuesta:', res.error);
                         alert(res.error);
                       }
                     } catch (error) {
-                      console.error('Error downloading backup:', error);
+                      console.error('💥 Error fatal durante la descarga:', error);
                       alert('Error al descargar la copia de seguridad');
                     }
                   }}
