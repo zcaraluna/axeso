@@ -152,8 +152,8 @@ docker-compose.yml
 # Database backups
 *.sql.gz
 *.dump
-backup/
-backups/
+/backup/
+/backups/
 
 # Temporary files
 tmp/
