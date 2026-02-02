@@ -20,6 +20,8 @@ export default function Dashboard() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
 
+  const [backupLoading, setBackupLoading] = useState(false);
+
   useEffect(() => {
     if (authLoading) return; // Esperar a que termine la carga de autenticación
 
@@ -213,10 +215,12 @@ export default function Dashboard() {
               </Link>
               {user?.username === 'garv' && (
                 <button
+                  disabled={backupLoading}
                   onClick={async (e) => {
                     e.preventDefault();
-                    if (!confirm('¿Desea descargar una copia de seguridad completa de la base de datos (SQL)?')) return;
+                    if (backupLoading) return;
 
+                    setBackupLoading(true);
                     try {
                       const res = await apiClient.getBackup();
                       if (res.data && res.data.blob) {
@@ -237,23 +241,29 @@ export default function Dashboard() {
                     } catch (error) {
                       console.error('Error downloading backup:', error);
                       alert('Error al descargar la copia de seguridad');
+                    } finally {
+                      setBackupLoading(false);
                     }
                   }}
-                  className="block text-left group"
+                  className={`block text-left group ${backupLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-all duration-200 border-2 border-transparent hover:border-emerald-500 h-full">
+                  <div className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-all duration-200 border-2 border-transparent ${backupLoading ? '' : 'hover:border-emerald-500'} h-full`}>
                     <div className="flex items-center mb-3">
                       <div className="w-6 h-6 mr-3 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-slate-800 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="Drawing: M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                        </svg>
+                        {backupLoading ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-600"></div>
+                        ) : (
+                          <svg className="w-6 h-6 text-slate-800 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                          </svg>
+                        )}
                       </div>
                       <h2 className="text-xl font-bold text-slate-800 group-hover:text-emerald-600 transition">
-                        Copia de Seguridad
+                        {backupLoading ? 'Generando...' : 'Copia de Seguridad'}
                       </h2>
                     </div>
                     <p className="text-slate-600">
-                      Descargar respaldo completo de la base de datos (SQL)
+                      {backupLoading ? 'Preparando archivo SQL, por favor espere...' : 'Descargar respaldo completo de la base de datos (SQL)'}
                     </p>
                   </div>
                 </button>
