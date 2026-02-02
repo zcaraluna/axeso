@@ -52,8 +52,12 @@ class ApiClient {
   async getVisits(search?: string) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
-    
+
     return this.request(`/visits?${params}`);
+  }
+
+  async getVisitStats() {
+    return this.request('/visits/stats');
   }
 
   async getVisit(id: string) {

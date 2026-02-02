@@ -22,7 +22,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (authLoading) return; // Esperar a que termine la carga de autenticación
-    
+
     if (!user) {
       router.push('/');
       return;
@@ -39,23 +39,11 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     try {
-      const response = await apiClient.getVisits();
-      
-      if (response.data && Array.isArray(response.data)) {
-        const visits: Visit[] = response.data;
-        
-        // Obtener fecha de hoy en formato DD/MM/YYYY
-        const today = new Date();
-        const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-        
-        // Filtrar solo visitas de hoy
-        const todayVisits = visits.filter((v: Visit) => v.entryDate === todayStr);
-        
-        const total = todayVisits.length;
-        // "Dentro de la Dirección" muestra TODAS las personas sin salida registrada, sin importar la fecha de entrada
-        const inside = visits.filter((v: Visit) => !v.exitTime).length;
-        const exited = todayVisits.filter((v: Visit) => v.exitTime).length;
-        setStats({ total, inside, exited });
+      const response = await apiClient.getVisitStats();
+
+      if (response.data && typeof response.data === 'object') {
+        const { total, inside, exited } = response.data as { total: number, inside: number, exited: number };
+        setStats({ total: total || 0, inside: inside || 0, exited: exited || 0 });
       }
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -101,38 +89,38 @@ export default function Dashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <h3 className="text-sm font-medium text-slate-600 mb-2">Visitas de Hoy</h3>
-              {loading ? (
-                <div className="flex justify-center items-center h-16">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : (
-                <p className="text-4xl font-bold text-blue-600">{stats.total.toLocaleString('es-PY', { useGrouping: true }).replace(/,/g, '.')}</p>
-              )}
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <h3 className="text-sm font-medium text-slate-600 mb-2">Dentro de la Dirección</h3>
-              {loading ? (
-                <div className="flex justify-center items-center h-16">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-              ) : (
-                <p className="text-4xl font-bold text-green-600">{stats.inside.toLocaleString('es-PY', { useGrouping: true }).replace(/,/g, '.')}</p>
-              )}
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <h3 className="text-sm font-medium text-slate-600 mb-2">Salidas Registradas</h3>
-              {loading ? (
-                <div className="flex justify-center items-center h-16">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                </div>
-              ) : (
-                <p className="text-4xl font-bold text-red-600">{stats.exited.toLocaleString('es-PY', { useGrouping: true }).replace(/,/g, '.')}</p>
-              )}
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <h3 className="text-sm font-medium text-slate-600 mb-2">Visitas de Hoy</h3>
+            {loading ? (
+              <div className="flex justify-center items-center h-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <p className="text-4xl font-bold text-blue-600">{stats.total.toLocaleString('es-PY', { useGrouping: true }).replace(/,/g, '.')}</p>
+            )}
           </div>
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <h3 className="text-sm font-medium text-slate-600 mb-2">Dentro de la Dirección</h3>
+            {loading ? (
+              <div className="flex justify-center items-center h-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            ) : (
+              <p className="text-4xl font-bold text-green-600">{stats.inside.toLocaleString('es-PY', { useGrouping: true }).replace(/,/g, '.')}</p>
+            )}
+          </div>
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <h3 className="text-sm font-medium text-slate-600 mb-2">Salidas Registradas</h3>
+            {loading ? (
+              <div className="flex justify-center items-center h-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+              </div>
+            ) : (
+              <p className="text-4xl font-bold text-red-600">{stats.exited.toLocaleString('es-PY', { useGrouping: true }).replace(/,/g, '.')}</p>
+            )}
+          </div>
+        </div>
 
         {/* Funciones principales - dos tarjetas grandes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
