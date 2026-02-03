@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
+import { getParaguayDate, getParaguayTime } from '@/lib/date-utils';
 
 interface Visit {
   id: string;
@@ -37,12 +38,12 @@ export default function RegistroSalida() {
 
   useEffect(() => {
     if (authLoading) return; // Esperar a que termine la carga de autenticación
-    
+
     if (!user) {
       router.push('/');
       return;
     }
-    
+
     loadVisitsInside();
   }, [user, authLoading, router]);
 
@@ -54,7 +55,7 @@ export default function RegistroSalida() {
     try {
       setLoadingVisits(true);
       const response = await apiClient.getVisits();
-      
+
       if (response.error) {
         setError(response.error);
         return;
@@ -80,7 +81,7 @@ export default function RegistroSalida() {
     }
 
     const term = searchTerm.toLowerCase();
-    const filtered = visitsInside.filter(visit => 
+    const filtered = visitsInside.filter(visit =>
       visit.id.toLowerCase().includes(term) ||
       visit.nombres.toLowerCase().includes(term) ||
       visit.apellidos.toLowerCase().includes(term) ||
@@ -88,7 +89,7 @@ export default function RegistroSalida() {
       visit.motivoCategoria.toLowerCase().includes(term) ||
       visit.motivoDescripcion.toLowerCase().includes(term)
     );
-    
+
     setFilteredVisits(filtered);
   };
 
@@ -100,7 +101,7 @@ export default function RegistroSalida() {
 
     try {
       let currentUser = user;
-      
+
       // Si los datos del usuario no están completos, intentar refrescarlos
       if (!user.nombres || !user.apellidos) {
         await refreshUser();
@@ -111,14 +112,13 @@ export default function RegistroSalida() {
         }
       }
 
-      const now = new Date();
-      const exitRegisteredBy = currentUser.nombres && currentUser.apellidos 
+      const exitRegisteredBy = currentUser.nombres && currentUser.apellidos
         ? `${currentUser.nombres} ${currentUser.apellidos}`.trim()
         : currentUser.username || 'Usuario desconocido';
-      
+
       const updateData = {
-        exitDate: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        exitTime: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        exitDate: getParaguayDate(),
+        exitTime: getParaguayTime(),
         exitRegisteredBy
       };
 
@@ -226,11 +226,10 @@ export default function RegistroSalida() {
                 </p>
               </div>
             ) : (
-              <div className={`grid gap-6 ${
-                filteredVisits.length === 1 
-                  ? 'grid-cols-1 max-w-2xl mx-auto' 
-                  : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
-              }`}>
+              <div className={`grid gap-6 ${filteredVisits.length === 1
+                ? 'grid-cols-1 max-w-2xl mx-auto'
+                : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
+                }`}>
                 {filteredVisits.map((visit) => (
                   <div key={visit.id} className="border border-slate-200 rounded-lg p-6 bg-slate-50 hover:bg-slate-100 transition-colors">
                     <div className="flex justify-between items-start mb-4">

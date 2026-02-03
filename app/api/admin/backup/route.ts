@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { formatToParaguay } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        let sqlDump = `-- Backup generated on ${new Date().toISOString()}\n`;
+        let sqlDump = `-- Backup generated on ${formatToParaguay(new Date(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}\n`;
         sqlDump += `SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\n`;
 
         // 2. Exportar Usuarios
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
             sqlDump += visits.map(v => `(${escapeSqlValue(v.id)}, ${escapeSqlValue(v.nombres)}, ${escapeSqlValue(v.apellidos)}, ${escapeSqlValue(v.cedula)}, ${escapeSqlValue(v.telefono)}, ${escapeSqlValue(v.entryDate)}, ${escapeSqlValue(v.entryTime)}, ${escapeSqlValue(v.motivoCategoria)}, ${escapeSqlValue(v.motivoDescripcion)}, ${escapeSqlValue(v.photo)}, ${escapeSqlValue(v.exitDate)}, ${escapeSqlValue(v.exitTime)}, ${escapeSqlValue(v.registeredBy)}, ${escapeSqlValue(v.createdAt)}, ${escapeSqlValue(v.updatedAt)}, ${escapeSqlValue(v.userId)}, ${escapeSqlValue(v.exitRegisteredBy)}, ${escapeSqlValue(v.tipoDocumento)})`).join(',\n') + ';\n\n';
         }
 
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const timestamp = formatToParaguay(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/[\/, :]/g, '-');
         const fileName = `axeso_backup_prisma_${timestamp}.sql`;
 
         // 7. Devolver respuesta con el archivo

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getParaguayDate } from '@/lib/date-utils'
 
 export async function GET(request: NextRequest) {
     try {
-        // Obtener fecha de hoy en formato DD/MM/YYYY
-        const today = new Date();
-        const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+        // Obtener fecha de hoy en formato DD/MM/YYYY (Paraguay)
+        const todayStr = getParaguayDate();
 
         // 1. Visitas de hoy (total)
         const totalToday = await prisma.visit.count({

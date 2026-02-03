@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
+import { getParaguayDate, getParaguayTime } from '@/lib/date-utils';
 
 interface Visit {
   id: string;
@@ -57,7 +58,7 @@ export default function RegistroEntrada() {
 
   useEffect(() => {
     if (authLoading) return; // Esperar a que termine la carga de autenticación
-    
+
     if (!user) {
       router.push('/');
       return;
@@ -81,15 +82,14 @@ export default function RegistroEntrada() {
     }
 
     try {
-      const now = new Date();
       const visitData = {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
         cedula: formData.cedula,
         tipoDocumento: formData.tipoDocumento,
         telefono: formData.telefono,
-        entryDate: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        entryTime: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        entryDate: getParaguayDate(),
+        entryTime: getParaguayTime(),
         motivoCategoria: formData.motivoCategoria,
         motivoDescripcion: formData.motivoDescripcion,
         userId: user.id

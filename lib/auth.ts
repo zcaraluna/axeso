@@ -1,12 +1,13 @@
 import { prisma } from './prisma';
 import crypto from 'crypto';
+import { getParaguayNow } from './date-utils';
 
 /**
  * Genera un fingerprint único para un dispositivo basado en múltiples factores
  * Incluye: user agent, accept-language, accept-encoding, y otros headers disponibles
  */
 export function generarFingerprint(
-  userAgent: string, 
+  userAgent: string,
   acceptLanguage?: string,
   acceptEncoding?: string,
   ipAddress?: string
@@ -19,7 +20,7 @@ export function generarFingerprint(
     // Incluir IP como factor adicional (aunque puede cambiar, ayuda a diferenciar)
     ipAddress || '',
   ].join('|');
-  
+
   return crypto.createHash('sha256').update(factors).digest('hex');
 }
 
@@ -35,7 +36,7 @@ export async function validarCodigoActivacion(
   try {
     // Normalizar el código ingresado (eliminar guiones y convertir a mayúsculas)
     const codigoNormalizado = codigo.replace(/-/g, '').toUpperCase();
-    
+
     // Buscar el código normalizando ambos lados
     const codigos = await prisma.codigoActivacion.findMany({
       where: {
@@ -44,7 +45,7 @@ export async function validarCodigoActivacion(
     });
 
     // Buscar el código que coincida después de normalizar
-    const codigoActivacion = codigos.find(c => 
+    const codigoActivacion = codigos.find(c =>
       c.codigo.replace(/-/g, '').toUpperCase() === codigoNormalizado
     );
 
@@ -63,7 +64,7 @@ export async function validarCodigoActivacion(
     }
 
     // Verificar expiración
-    if (codigoActivacion.expiraEn && new Date(codigoActivacion.expiraEn) < new Date()) {
+    if (codigoActivacion.expiraEn && new Date(codigoActivacion.expiraEn) < getParaguayNow()) {
       return { valido: false, mensaje: 'Este código ha expirado' };
     }
 
@@ -79,7 +80,7 @@ export async function validarCodigoActivacion(
         where: { id: codigoActivacion.id },
         data: {
           usado: true,
-          usadoEn: new Date(),
+          usadoEn: getParaguayNow(),
           dispositivoFingerprint: fingerprint,
         },
       });
@@ -93,8 +94,8 @@ export async function validarCodigoActivacion(
             ipAddress: ipAddress || null,
             codigoActivacionId: codigoActivacion.id,
             nombre: codigoActivacion.nombre || dispositivoExistente.nombre,
-            autorizadoEn: new Date(),
-            ultimoAcceso: new Date(),
+            autorizadoEn: getParaguayNow(),
+            ultimoAcceso: getParaguayNow(),
             activo: true,
           },
         });
@@ -141,9 +142,9 @@ export async function verificarDispositivoAutorizado(
     // Si el dispositivo tiene un código asociado, verificar si ha expirado
     if (dispositivo.codigoActivacion) {
       const codigo = dispositivo.codigoActivacion;
-      
+
       // Verificar si el código ha expirado
-      if (codigo.expiraEn && new Date(codigo.expiraEn) < new Date()) {
+      if (codigo.expiraEn && new Date(codigo.expiraEn) < getParaguayNow()) {
         // El código ha expirado, desactivar el dispositivo automáticamente
         await prisma.dispositivoAutorizado.update({
           where: { id: dispositivo.id },
@@ -166,9 +167,9 @@ export async function verificarDispositivoAutorizado(
     // Actualizar último acceso
     await prisma.dispositivoAutorizado.update({
       where: { id: dispositivo.id },
-      data: { ultimoAcceso: new Date() },
+      data: { ultimoAcceso: getParaguayNow() },
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error verificando dispositivo autorizado:', error);
@@ -187,7 +188,7 @@ export async function generarCodigoActivacion(
   try {
     const codigo = crypto.randomBytes(16).toString('hex').toUpperCase();
 
-    const fechaExpiracion = new Date();
+    const fechaExpiracion = getParaguayNow();
     fechaExpiracion.setDate(fechaExpiracion.getDate() + diasExpiracion);
 
     await prisma.codigoActivacion.create({
@@ -313,7 +314,7 @@ export async function obtenerDispositivosAutorizados() {
     });
 
     console.log(`[obtenerDispositivosAutorizados] Total dispositivos encontrados en BD: ${dispositivos.length}`);
-    
+
     // Log de cada dispositivo para debug
     dispositivos.forEach((d, index) => {
       console.log(`[obtenerDispositivosAutorizados] Dispositivo ${index + 1}:`, {
@@ -342,9 +343,9 @@ export async function obtenerDispositivosAutorizados() {
         codigo_expira_en: d.codigoActivacion?.expiraEn || null,
         codigo_activo: d.codigoActivacion?.activo ?? true,
       };
-      
+
       console.log(`[obtenerDispositivosAutorizados] Dispositivo: ${dispositivo.id}, activo: ${dispositivo.activo}, código: ${dispositivo.codigo_activacion || 'sin código'}`);
-      
+
       return dispositivo;
     });
   } catch (error) {
