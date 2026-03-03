@@ -214,6 +214,23 @@ export default function Dashboard() {
                 </div>
               </Link>
               {user?.username === 'garv' && (
+                <Link href="/reporte-ingresos" className="block group">
+                  <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-all duration-200 border-2 border-transparent hover:border-teal-500 h-full">
+                    <div className="flex items-center mb-3">
+                      <svg className="w-6 h-6 mr-3 text-slate-800 group-hover:text-teal-600 transition group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h2 className="text-xl font-bold text-slate-800 group-hover:text-teal-600 transition">
+                        Reporte de Ingresos
+                      </h2>
+                    </div>
+                    <p className="text-slate-600">
+                      Descargar lista detallada de personas que ingresaron en fecha(s) específica(s)
+                    </p>
+                  </div>
+                </Link>
+              )}
+              {user?.username === 'garv' && (
                 <button
                   disabled={backupLoading}
                   onClick={async (e) => {

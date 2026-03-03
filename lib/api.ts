@@ -118,6 +118,13 @@ class ApiClient {
     });
   }
 
+  // Reports API
+  async getReporteIngresosPorDia(startDate: string, endDate?: string) {
+    const params = new URLSearchParams({ startDate });
+    if (endDate) params.append('endDate', endDate);
+    return this.request(`/reports/ingresos-por-dia?${params}`);
+  }
+
   // Admin Backup API
   async getBackup() {
     try {
