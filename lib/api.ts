@@ -7,12 +7,11 @@ interface ApiResponse<T> {
 }
 
 class ApiClient {
-  private token: string | null = null;
-
-  constructor() {
+  private getToken(): string | null {
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('authToken');
+      return localStorage.getItem('authToken');
     }
+    return null;
   }
 
   private async request<T>(
@@ -26,8 +25,9 @@ class ApiClient {
         ...(options.headers as Record<string, string>),
       };
 
-      if (this.token) {
-        headers.Authorization = `Bearer ${this.token}`;
+      const token = this.getToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
       }
 
       const response = await fetch(url, {
@@ -129,11 +129,12 @@ class ApiClient {
   async getBackup() {
     try {
       const url = `${API_BASE}/admin/backup`;
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-        },
-      });
+      const token = this.getToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(url, { headers });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

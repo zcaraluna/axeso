@@ -86,9 +86,10 @@ export async function PUT(
       role
     }
 
-    // Si se proporcionó una nueva contraseña, hashearla
+    // Si se proporcionó una nueva contraseña, hashearla y solicitar cambio en primer inicio de sesión
     if (password) {
       updateData.password = await bcrypt.hash(password, 12)
+      updateData.mustChangePassword = true
     }
 
     // Si se proporcionó isActive, validar y actualizar
@@ -115,6 +116,7 @@ export async function PUT(
         grado: true,
         role: true,
         isActive: true,
+        mustChangePassword: true,
         createdAt: true
       }
     })

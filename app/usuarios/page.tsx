@@ -175,6 +175,10 @@ export default function Usuarios() {
         }
 
         const response = await apiClient.updateUser(editingUser.id, updateData);
+        if (response.error) {
+          setError(response.error);
+          return;
+        }
         if (response.data) {
           setSuccess('Usuario actualizado exitosamente');
           handleCloseModal();
@@ -184,6 +188,10 @@ export default function Usuarios() {
       } else {
         // Crear nuevo usuario
         const response = await apiClient.createUser(formData);
+        if (response.error) {
+          setError(response.error);
+          return;
+        }
         if (response.data) {
           setSuccess('Usuario creado exitosamente');
           handleCloseModal();
@@ -211,10 +219,15 @@ export default function Usuarios() {
 
     if (confirm(`¿Está seguro de eliminar el usuario "${username}"?`)) {
       try {
-        await apiClient.deleteUser(userId);
-      setSuccess('Usuario eliminado exitosamente');
+        const response = await apiClient.deleteUser(userId);
+        if (response.error) {
+          setError(response.error);
+          setTimeout(() => setError(''), 3000);
+          return;
+        }
+        setSuccess('Usuario eliminado exitosamente');
         loadUsers();
-      setTimeout(() => setSuccess(''), 3000);
+        setTimeout(() => setSuccess(''), 3000);
       } catch (error) {
         console.error('Error deleting user:', error);
         setError('Error al eliminar usuario');
